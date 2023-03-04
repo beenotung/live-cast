@@ -1,7 +1,8 @@
 import dgram from 'dgram'
-import { clientPort } from './config'
+import { clientPort, max_size } from './config'
 import { getFPS, startFPS } from './fps'
 import { decodeColor } from './color'
+import jpeg from 'jpeg-js'
 
 let socket = dgram.createSocket('udp4')
 
@@ -35,26 +36,60 @@ socket.on('listening', () => {
   startFPS()
 })
 
+let jpegData = Buffer.alloc(1024 * 1024)
+jpegData[0] = 255
+let jpegSize = 0
+
+let lastI = -1
+
 socket.on('message', (msg, rinfo) => {
-  frame++
-  let size = rinfo.size - 3
+  let size = rinfo.size
 
-  let offset =
-    (msg[size + 0] << 0) | (msg[size + 1] << 8) | (msg[size + 2] << 16)
+  let i = msg[0]
 
-  for (let i = 0; i < size; i += 2) {
-    // let code = msg[i]
-    let code = (msg[i + 0] << 0) | (msg[i + 1] << 8)
-    decodeColor(code, data, offset)
-    offset += 4
+  if (i != lastI + 1) {
+    lastI = -1
+    return
   }
-  context.putImageData(imageData, 0, 0)
+  lastI = i
 
-  let rate = getFPS()
+  let offset = 1 + i * (max_size - 1)
 
-  process.stdout.write(
-    `\r  frame ${frame} | ${rate} fps | size ${size} | offset ${offset}  `,
-  )
+  // console.log({ i })
+
+  if (i == 0) {
+    frame++
+    if (frame > 1) {
+      try {
+        let jpegView = jpegData.subarray(0, jpegSize)
+        let rawData = jpeg.decode(jpegView).data
+        // rawData.copy(data as any, 0, 0, jpegSize)
+        for (let i = 0; i < n; i += 4) {
+          let b = rawData[i + 0]
+          let g = rawData[i + 1]
+          let r = rawData[i + 2]
+          data[i + 0] = r
+          data[i + 1] = g
+          data[i + 2] = b
+        }
+
+        context.putImageData(imageData, 0, 0)
+
+        let rate = getFPS()
+
+        process.stdout.write(
+          `\r  frame ${frame} | ${rate} fps | size ${size} | offset ${offset}  `,
+        )
+      } catch (error) {
+        // due to drop package
+        frame--
+        console.log(error)
+      }
+    }
+  }
+
+  msg.copy(jpegData, offset, 1, size)
+  jpegSize = offset + size - 1
 })
 
 socket.bind(clientPort)

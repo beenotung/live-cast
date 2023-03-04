@@ -2,14 +2,15 @@ import robot from 'robotjs'
 import dgram from 'dgram'
 import os from 'os'
 import { getFPS, startFPS } from './fps'
-import { clientPort, serverPort } from './config'
+import { clientPort, max_size, serverPort } from './config'
 import { encodeColor } from './color'
+import jpeg from 'jpeg-js'
+import fs from 'fs'
+
+let quality = 50
+let target_frags = 3
 
 let socket = dgram.createSocket('udp4')
-
-let max_size = 65507
-max_size = 3 + 64800 // 1080 x 60
-max_size -= 3
 
 let address = Object.values(os.networkInterfaces())
   .flatMap(s => s)
@@ -36,77 +37,78 @@ for (let i = 0; i < n; i++) {
   lastImage[i] = 0
 }
 
-let newCapture = robot.screen.capture()
-let newImage: Buffer = newCapture.image
-
 let frame = 0
-let offset = 0
-
-let message = Buffer.alloc(max_size + 3)
-message = Buffer.alloc(2 ** 32)
 
 function tick() {
   frame++
 
-  for (let i = 0; i < n; i++) {
-    if (
-      newImage[offset + 0] != lastImage[offset + 0] ||
-      newImage[offset + 1] != lastImage[offset + 1] ||
-      newImage[offset + 2] != lastImage[offset + 2]
-    ) {
-      break
-    }
-    // offset = (offset + 4) % n
-    offset += 4
-    if (offset >= n) {
-      offset = 0
-      newCapture = robot.screen.capture()
-      newImage = newCapture.image
-    }
-  }
+  let newCapture = robot.screen.capture()
+  let newImage: Buffer = newCapture.image
 
-  let size = max_size
+  let data = jpeg.encode(
+    {
+      width: newCapture.width,
+      height: newCapture.height,
+      data: newImage,
+    },
+    quality,
+  ).data
+  // max_size = 10
+  // data = data.subarray(0, 40)
+  // for (let i = 1; i < 40; i++) {
+  //   data[i] = i
+  // }
+  let n = data.length
+  // let originalData = Buffer.from(data)
+  // console.log({ originalData })
 
-  message[size + 0] = (offset >> 0) & 255
-  message[size + 1] = (offset >> 8) & 255
-  message[size + 2] = (offset >> 16) & 255
-
-  for (let i = 0; i < size; i += 2) {
-    let b = newImage[offset + 0]
-    let g = newImage[offset + 1]
-    let r = newImage[offset + 2]
-    let code = encodeColor(r, g, b)
-    // message[i] = code
-    message[i + 0] = (code >> 0) & 255
-    message[i + 1] = (code >> 8) & 255
-    lastImage[offset + 0] = b
-    lastImage[offset + 1] = g
-    lastImage[offset + 2] = r
-    // offset = (offset + 4) % n
-    offset += 4
-    if (offset == n) {
-      offset = 0
-      newCapture = robot.screen.capture()
-      newImage = newCapture.image
-    }
-  }
-
-  socket.send(
-    message,
-    0,
-    size + 3,
-    clientPort,
-    broadcastAddress,
-    (err, bytes) => {
+  let offset = 0
+  // let sent: any[] = []
+  let sentBytes = 1
+  function loop(i: number) {
+    if (sentBytes == n) {
       let rate = getFPS()
 
+      let frags = sentBytes / (max_size - 1)
+      if (frags < target_frags) {
+        quality++
+      } else if (frags > target_frags) {
+        quality--
+      }
+      let f = frags.toFixed(2)
       process.stdout.write(
-        `\r  frame ${frame} | ${rate} fps | offset ${offset} | err ${err} | ${bytes} bytes  `,
+        `\r  frame ${frame} | ${rate} fps | ${quality} q | ${f} frags  `,
       )
 
-      // setImmediate(tick)
-    },
-  )
+      setImmediate(tick)
+      // setTimeout(tick, 200)
+      return
+    }
+
+    let size = n - offset
+    if (size > max_size) {
+      size = max_size
+    }
+    data[offset] = i
+    // console.log({ n, i, size, offset })
+    // sent.push(Buffer.from(data.subarray(offset, offset + size)))
+    socket.send(
+      data,
+      offset,
+      size,
+      clientPort,
+      broadcastAddress,
+      (err, bytes) => {
+        if (err) {
+          console.log(err)
+        }
+        offset += size - 1
+        sentBytes += size - 1
+        loop(i + 1)
+      },
+    )
+  }
+  loop(0)
 }
 
 socket.bind(serverPort, () => {
@@ -114,7 +116,9 @@ socket.bind(serverPort, () => {
   console.log('UDP server listening on', address)
   socket.setBroadcast(true)
   startFPS()
-  // setImmediate(tick)
+  setImmediate(tick)
   // setInterval(tick, 33)
-  setInterval(tick, 33 * 5)
+  // setInterval(tick, 33 * 5)
+  // tick()
+  // setTimeout(tick, 1000)
 })
