@@ -48,10 +48,10 @@ socket.on('message', (msg, rinfo) => {
   let i = msg[0]
 
   if (i != lastI + 1) {
+    console.log('dropped')
     lastI = -1
     return
   }
-  lastI = i
 
   let offset = 1 + i * (max_size - 1)
 
@@ -59,15 +59,16 @@ socket.on('message', (msg, rinfo) => {
 
   if (i == 0) {
     frame++
+    console.log('frame frags', lastI)
     if (frame > 1) {
       try {
         let jpegView = jpegData.subarray(0, jpegSize)
         let rawData = jpeg.decode(jpegView).data
         // rawData.copy(data as any, 0, 0, jpegSize)
         for (let i = 0; i < n; i += 4) {
-          let b = rawData[i + 0]
+          let r = rawData[i + 0]
           let g = rawData[i + 1]
-          let r = rawData[i + 2]
+          let b = rawData[i + 2]
           data[i + 0] = r
           data[i + 1] = g
           data[i + 2] = b
@@ -90,6 +91,8 @@ socket.on('message', (msg, rinfo) => {
 
   msg.copy(jpegData, offset, 1, size)
   jpegSize = offset + size - 1
+
+  lastI = i
 })
 
 socket.bind(clientPort)
