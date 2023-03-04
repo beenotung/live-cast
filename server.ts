@@ -71,14 +71,14 @@ function tick() {
   message[size + 1] = (offset >> 8) & 255
   message[size + 2] = (offset >> 16) & 255
 
-  for (let i = 0; i < size; i++) {
+  for (let i = 0; i < size; i += 2) {
     let b = newImage[offset + 0]
     let g = newImage[offset + 1]
     let r = newImage[offset + 2]
     let code = encodeColor(r, g, b)
-    message[i] = code
-    // message[i + 0] = (code >> 0) & 255
-    // message[i + 1] = (code >> 8) & 255
+    // message[i] = code
+    message[i + 0] = (code >> 0) & 255
+    message[i + 1] = (code >> 8) & 255
     lastImage[offset + 0] = b
     lastImage[offset + 1] = g
     lastImage[offset + 2] = r

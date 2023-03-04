@@ -42,8 +42,10 @@ socket.on('message', (msg, rinfo) => {
   let offset =
     (msg[size + 0] << 0) | (msg[size + 1] << 8) | (msg[size + 2] << 16)
 
-  for (let i = 0; i < size; i++) {
-    decodeColor(msg[i], data, offset)
+  for (let i = 0; i < size; i += 2) {
+    // let code = msg[i]
+    let code = (msg[i + 0] << 0) | (msg[i + 1] << 8)
+    decodeColor(code, data, offset)
     offset += 4
   }
   context.putImageData(imageData, 0, 0)
