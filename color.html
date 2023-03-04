@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Color</title>
+  </head>
+  <body>
+    <canvas></canvas>
+    <script>
+      let w = 256
+      let h = 256
+      let canvas = document.querySelector('canvas')
+      canvas.width = w
+      canvas.height = h
+      let context = canvas.getContext('2d')
+      let imageData = context.getImageData(0, 0, w, h)
+      let data = imageData.data
+      let offset = 0
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          let r = Math.floor((x / w) * 256)
+          let b = Math.floor((y / h) * 256)
+          let g = Math.floor(((r + b) / 2) * 256)
+          g = 0
+          data[offset + 0] = r
+          data[offset + 1] = g
+          data[offset + 2] = b
+          data[offset + 3] = 255
+          offset += 4
+        }
+      }
+      context.putImageData(imageData, 0, 0)
+    </script>
+  </body>
+</html>
