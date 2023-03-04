@@ -3,6 +3,7 @@ import { clientPort, max_size } from './config'
 import { getFPS, startFPS } from './fps'
 import { decodeColor } from './color'
 import jpeg from 'jpeg-js'
+import { parts, partsCount } from './screenshot'
 
 let socket = dgram.createSocket('udp4')
 
@@ -36,63 +37,50 @@ socket.on('listening', () => {
   startFPS()
 })
 
-let jpegData = Buffer.alloc(1024 * 1024)
-jpegData[0] = 255
-let jpegSize = 0
-
-let lastI = -1
-
 socket.on('message', (msg, rinfo) => {
   let size = rinfo.size
 
-  let i = msg[0]
+  let partId = msg[0] as 0 | 1
+  msg[0] = 255
 
-  if (i != lastI + 1) {
-    console.log('dropped')
-    lastI = -1
-    return
+  let rawData = jpeg.decode(msg).data
+
+  let [offsetX, offsetY] = parts[partId]
+
+  if (partId == 1) {
+    offsetX = 960
   }
 
-  let offset = 1 + i * (max_size - 1)
+  let i = 0
+  for (let yi = 0; yi < parts.h; yi++) {
+    let y = offsetY + yi
 
-  // console.log({ i })
+    for (let xi = 0; xi < parts.w; xi++) {
+      let x = offsetX + xi
 
-  if (i == 0) {
-    frame++
-    console.log('frame frags', lastI)
-    if (frame > 1) {
-      try {
-        let jpegView = jpegData.subarray(0, jpegSize)
-        let rawData = jpeg.decode(jpegView).data
-        // rawData.copy(data as any, 0, 0, jpegSize)
-        for (let i = 0; i < n; i += 4) {
-          let r = rawData[i + 0]
-          let g = rawData[i + 1]
-          let b = rawData[i + 2]
-          data[i + 0] = r
-          data[i + 1] = g
-          data[i + 2] = b
-        }
+      let offset = (y * w + x) * 4
 
-        context.putImageData(imageData, 0, 0)
+      let r = rawData[i + 0]
+      let g = rawData[i + 1]
+      let b = rawData[i + 2]
 
-        let rate = getFPS()
+      data[offset + 0] = r
+      data[offset + 1] = g
+      data[offset + 2] = b
 
-        process.stdout.write(
-          `\r  frame ${frame} | ${rate} fps | size ${size} | offset ${offset}  `,
-        )
-      } catch (error) {
-        // due to drop package
-        frame--
-        console.log(error)
-      }
+      i += 4
     }
   }
 
-  msg.copy(jpegData, offset, 1, size)
-  jpegSize = offset + size - 1
+  context.putImageData(imageData, 0, 0)
 
-  lastI = i
+  frame++
+
+  let rate = (getFPS() / partsCount).toFixed(0)
+
+  process.stdout.write(
+    `\r  frame ${frame} | ${rate} fps | size ${size} | p ${partId}  `,
+  )
 })
 
 socket.bind(clientPort)

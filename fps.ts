@@ -18,7 +18,5 @@ export function getFPS() {
 
   acc = acc * alpha + fps * beta
 
-  let rate = acc.toFixed(0)
-
-  return rate
+  return acc
 }
