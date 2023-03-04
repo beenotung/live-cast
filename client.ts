@@ -3,14 +3,11 @@ import { clientPort, max_size } from './config'
 import { getFPS, startFPS } from './fps'
 import { decodeColor } from './color'
 import jpeg from 'jpeg-js'
-import { parts, partsCount } from './screenshot'
+import { h, parts, partsCount, w } from './screenshot'
 
 let socket = dgram.createSocket('udp4')
 
 let canvas = document.querySelector('canvas#remote') as HTMLCanvasElement
-
-let w = 1920
-let h = 1080
 
 canvas.width = w
 canvas.height = h

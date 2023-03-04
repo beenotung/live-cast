@@ -2,20 +2,25 @@
 import { exec, execSync } from 'child_process'
 import { max_size } from './config'
 
-let w = 1920
-let h = 1080
+export let [w, h] = [1920, 1080] // 5 fps
+// export let [w, h] = [1600, 900] // 6 fps
+// export let [w, h] = [1280, 720] // 10 fps
+// export let [w, h] = [1024, 576] // 12 fps
+// export let [w, h] = [960, 540] // 16 fps
+// export let [w, h] = [720, 405] // 22 fps
+// export let [w, h] = [640, 360] // 30 fps
 
 function full() {
   let commandOptions = {
     encoding: 'buffer',
-    maxBuffer: 2073600 / 2, // 2M (1920 x 1080)
+    maxBuffer: w * h, // 2M (1920 x 1080)
   } as const
   let commandLine = `import -silent -window root -screen jpg:-`
   return execSync(commandLine, commandOptions)
 }
 
-function create(partId: number, crop: string) {
-  let q = 50
+function create(init_q: number, partId: number, crop: string) {
+  let q = init_q
   let commandLine = `import -silent -window root -crop ${crop} -quality ${q} -screen jpg:-`
   let commandOptions = {
     encoding: 'buffer',
@@ -53,33 +58,20 @@ function create(partId: number, crop: string) {
 
 export type Capture = ReturnType<typeof create>
 
-// export let parts = {
-//   0: [0, 0],
-//   1: [960, 0],
-//   2: [0, 540],
-//   3: [960, 540],
-//   w: 960,
-//   h: 540,
-// }
-
-// export let capture0 = create(0, '960x540+0+0')
-// export let capture1 = create(1, '960x540+960+0')
-// export let capture2 = create(2, '960x540+0+540')
-// export let capture3 = create(3, '960x540+960+540')
-
-// export let captures = [capture0, capture1, capture2, capture3]
-
 namespace profile1 {
   export let parts = {
     0: [0, 0],
     w: w,
     h: h,
   }
-  export let capture0 = create(0, `${w}x${h}+0+0`)
-  export let captures = [capture0]
 
+  export let init_q = 20
   export let min_q = 2
   export let dec_q_step = 1
+
+  export let capture0 = create(init_q, 0, `${w}x${h}+0+0`)
+
+  export let captures = [capture0]
 }
 
 namespace profile2 {
@@ -92,14 +84,18 @@ namespace profile2 {
     w: pw,
     h: ph,
   }
+
+  export let init_q = 50
+  export let min_q = 20
+  export let dec_q_step = 5
+
   export let captures: Capture[] = []
 
   for (let i of [0, 1] as const) {
-    captures.push(create(i, `${pw}x${ph}+${parts[i][0]}+${parts[i][1]}`))
+    captures.push(
+      create(init_q, i, `${pw}x${ph}+${parts[i][0]}+${parts[i][1]}`),
+    )
   }
-
-  export let min_q = 20
-  export let dec_q_step = 5
 }
 
 namespace profile3 {
@@ -113,14 +109,18 @@ namespace profile3 {
     w: pw,
     h: ph,
   }
+
+  export let init_q = 50
+  export let min_q = 20
+  export let dec_q_step = 10
+
   export let captures: Capture[] = []
 
   for (let i of [0, 1, 2] as const) {
-    captures.push(create(i, `${pw}x${ph}+${parts[i][0]}+${parts[i][1]}`))
+    captures.push(
+      create(init_q, i, `${pw}x${ph}+${parts[i][0]}+${parts[i][1]}`),
+    )
   }
-
-  export let min_q = 20
-  export let dec_q_step = 10
 }
 
 namespace profile4 {
@@ -135,14 +135,18 @@ namespace profile4 {
     w: pw,
     h: ph,
   }
+
+  export let init_q = 50
+  export let min_q = 20
+  export let dec_q_step = 10
+
   export let captures: Capture[] = []
 
   for (let i of [0, 1, 2, 3] as const) {
-    captures.push(create(i, `${pw}x${ph}+${parts[i][0]}+${parts[i][1]}`))
+    captures.push(
+      create(init_q, i, `${pw}x${ph}+${parts[i][0]}+${parts[i][1]}`),
+    )
   }
-
-  export let min_q = 20
-  export let dec_q_step = 10
 }
 
 export let { parts, captures, min_q, dec_q_step } = profile1
