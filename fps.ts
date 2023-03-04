@@ -11,6 +11,7 @@ export function startFPS() {
 export function getFPS() {
   let now = Date.now()
   let time = now - lastTime
+  if (time == 0) time = 1
   let fps = 1000 / time
 
   lastTime = now

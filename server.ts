@@ -8,7 +8,7 @@ import { encodeColor } from './color'
 let socket = dgram.createSocket('udp4')
 
 let max_size = 65507
-max_size = 64800 // 1080 x 60
+max_size = 3 + 64800 // 1080 x 60
 max_size -= 3
 
 let address = Object.values(os.networkInterfaces())
@@ -115,5 +115,6 @@ socket.bind(serverPort, () => {
   socket.setBroadcast(true)
   startFPS()
   // setImmediate(tick)
+  // setInterval(tick, 33)
   setInterval(tick, 33 * 5)
 })
