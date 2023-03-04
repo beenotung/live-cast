@@ -40,16 +40,12 @@ socket.on('listening', () => {
 socket.on('message', (msg, rinfo) => {
   let size = rinfo.size
 
-  let partId = msg[0] as 0 | 1
+  let partId = msg[0] as 0
   msg[0] = 255
 
   let rawData = jpeg.decode(msg).data
 
   let [offsetX, offsetY] = parts[partId]
-
-  if (partId == 1) {
-    offsetX = 960
-  }
 
   let i = 0
   for (let yi = 0; yi < parts.h; yi++) {
