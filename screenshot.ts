@@ -20,8 +20,13 @@ function full() {
 }
 
 function create(init_q: number, partId: number, crop: string) {
-  let q = init_q
-  let commandLine = `import -silent -window root -crop ${crop} -quality ${q} -screen jpg:-`
+  let q = 1 - 100
+  let commandLine = ``
+  function setQ(value: number) {
+    q = value
+    commandLine = `import -silent -window root -crop ${crop} -quality ${q} -screen jpg:-`
+  }
+  setQ(init_q)
   let commandOptions = {
     encoding: 'buffer',
     maxBuffer: max_size,
@@ -32,17 +37,15 @@ function create(init_q: number, partId: number, crop: string) {
         let buffer = execSync(commandLine, commandOptions)
         let remind = max_size - buffer.length
         if (remind > 10000 && q < 80) {
-          q += 5
-          console.log('+', { partId, q, remind })
-          commandLine = `import -silent -window root -crop ${crop} -quality ${q} -screen jpg:-`
+          setQ(q + 5)
+          console.log('+', { partId, crop, q, remind })
         }
         buffer[0] = partId
         return buffer
       } catch (error) {
         if (q > min_q) {
-          q -= dec_q_step
-          console.log('-', { partId, q })
-          commandLine = `import -silent -window root -crop ${crop} -quality ${q} -screen jpg:-`
+          setQ(q - dec_q_step)
+          console.log('-', { partId, crop, q })
         } else {
           console.log('screen content too complex', {
             partId,
