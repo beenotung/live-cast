@@ -4,7 +4,7 @@ import fs from 'fs'
 
 let counts = new Array(256 ** 3)
 
-function createPaletteFromImage(image: Buffer) {
+function createPaletteCount(image: Buffer) {
   let palette: number[] = []
 
   let n = image.length
@@ -163,11 +163,15 @@ function sample() {
 
   saveCapture(capture, 'original.jpg')
 
-  let palette = createEvenPalette()
+  // let palette = createEvenPalette()
 
-  // console.time('createPaletteFromImageExpensive')
-  // let palette = createPaletteFromImage(capture.image)
-  // console.timeEnd('createPaletteFromImageExpensive')
+  console.time('createPaletteKMean')
+  let palette = createPaletteKMean(capture.image)
+  console.timeEnd('createPaletteKMean')
+
+  // console.time('createPaletteCount')
+  // let palette = createPaletteCount(capture.image)
+  // console.timeEnd('createPaletteCount')
 
   // console.time('createSamplePalette')
   // let palette = createSamplePalette(capture.image)
@@ -186,31 +190,49 @@ function sample() {
   saveCapture(capture, 'compressed.jpg')
 }
 
-function createSamplePalette(image: Buffer) {
-  let palette: number[] = []
+function createPaletteKMean(image: Buffer) {
+  let n = image.length
 
-  function addColor(r: number, g: number, b: number) {
-    let code = (r << 16) | (g << 8) | (b << 0)
-    palette.push(code)
-  }
-  addColor(0, 0, 0)
-  addColor(255, 0, 0)
-  addColor(0, 255, 0)
-  addColor(0, 0, 255)
-  addColor(0, 255, 255)
-  addColor(255, 0, 255)
-  addColor(255, 255, 0)
-  addColor(255, 255, 255)
+  let groups = createEvenPalette().map(code => {
+    let b = (code >> 16) & 255
+    let g = (code >> 8) & 255
+    let r = (code >> 0) & 255
+    return { r, g, b, count: 0 }
+  })
 
-  let n = image.length / 4
-  for (let i = palette.length; i < 256; i++) {
-    let offset = Math.floor(Math.random() * n)
+  let speedup = 100
+  for (let offset = 0; offset < n; offset += 4 * speedup) {
+    process.stdout.write(
+      `\r createPaletteKMean ${((offset / n) * 100).toFixed(2)}%`,
+    )
     let b = image[offset + 0]
     let g = image[offset + 1]
     let r = image[offset + 2]
-    addColor(r, g, b)
+
+    let group = groups
+      .map((group, i) => {
+        let dr = r - group.r
+        let dg = g - group.g
+        let db = b - group.b
+
+        let d2 = dr * dr + dg * dg + db * db
+
+        return [group, d2] as const
+      })
+      .sort((a, b) => a[1] - b[1])[0][0]
+
+    let oldCount = group.count
+    let newCOunt = oldCount + 1
+    group.r = (group.r * oldCount + r) / newCOunt
+    group.g = (group.g * oldCount + g) / newCOunt
+    group.b = (group.b * oldCount + b) / newCOunt
+    group.count = newCOunt
   }
-  palette.sort((a, b) => b - a)
+  process.stdout.write(`\r                           \r`)
+
+  let palette: Palette = groups.map(
+    group => (group.r << 16) | (group.g << 8) | (group.b << 0),
+  )
 
   return palette
 }
