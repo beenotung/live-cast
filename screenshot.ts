@@ -2,6 +2,9 @@
 import { exec, execSync } from 'child_process'
 import { max_size } from './config'
 
+let offset = [0, 0]
+// let offset = [640, 1178]
+
 export let [w, h] = [1920, 1080] // 5 fps
 // export let [w, h] = [1600, 900] // 6 fps
 // export let [w, h] = [1280, 720] // 10 fps
@@ -17,6 +20,12 @@ function full() {
   } as const
   let commandLine = `import -silent -window root -screen jpg:-`
   return execSync(commandLine, commandOptions)
+}
+
+function makeCrop(w: number, h: number, [x, y]: number[]) {
+  x += offset[0]
+  y += offset[1]
+  return `${w}x${h}+${x}+${y}`
 }
 
 function create(init_q: number, partId: number, crop: string) {
@@ -72,7 +81,7 @@ namespace profile1 {
   export let min_q = 2
   export let dec_q_step = 1
 
-  export let capture0 = create(init_q, 0, `${w}x${h}+0+0`)
+  export let capture0 = create(init_q, 0, makeCrop(w, h, parts[0]))
 
   export let captures = [capture0]
 }
@@ -95,9 +104,7 @@ namespace profile2 {
   export let captures: Capture[] = []
 
   for (let i of [0, 1] as const) {
-    captures.push(
-      create(init_q, i, `${pw}x${ph}+${parts[i][0]}+${parts[i][1]}`),
-    )
+    captures.push(create(init_q, i, makeCrop(pw, ph, parts[i])))
   }
 }
 
@@ -120,9 +127,7 @@ namespace profile3 {
   export let captures: Capture[] = []
 
   for (let i of [0, 1, 2] as const) {
-    captures.push(
-      create(init_q, i, `${pw}x${ph}+${parts[i][0]}+${parts[i][1]}`),
-    )
+    captures.push(create(init_q, i, makeCrop(pw, ph, parts[i])))
   }
 }
 
@@ -146,9 +151,7 @@ namespace profile4 {
   export let captures: Capture[] = []
 
   for (let i of [0, 1, 2, 3] as const) {
-    captures.push(
-      create(init_q, i, `${pw}x${ph}+${parts[i][0]}+${parts[i][1]}`),
-    )
+    captures.push(create(init_q, i, makeCrop(pw, ph, parts[i])))
   }
 }
 
