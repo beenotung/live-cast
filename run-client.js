@@ -6,7 +6,16 @@ delete pkg.dependencies['robotjs']
 let text = JSON.stringify(pkg, null, 2)
 writeFileSync('package.json', text + '\n')
 
-execSync('npm i')
-execSync('npm run build')
-execSync('npm i', { cwd: 'my-app' })
-execSync('npm start', { cwd: 'my-app' })
+function run(cmd, { cwd } = {}) {
+  let msg = '$ ' + cmd
+  if (cwd) {
+    msg = cwd + msg
+  }
+  console.log(msg)
+  execSync(cmd, { cwd, stdio: 'inherit' })
+}
+
+run('npm install')
+run('npm run build')
+run('npm install', { cwd: 'my-app' })
+run('npm start', { cwd: 'my-app' })
