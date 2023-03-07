@@ -1,3 +1,5 @@
+document.querySelector('#msg')?.remove()
+
 import dgram from 'dgram'
 import { clientPort, max_size } from './config'
 import { getFPS, startFPS } from './fps'
@@ -8,6 +10,7 @@ import { h, parts, partsCount, w } from './screenshot'
 let socket = dgram.createSocket('udp4')
 
 let canvas = document.querySelector('canvas#remote') as HTMLCanvasElement
+canvas.hidden = false
 
 canvas.width = w
 canvas.height = h
