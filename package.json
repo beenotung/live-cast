@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node server.ts",
-    "build": "esbuild --bundle --platform=node client.ts --outfile=my-app/src/bundle.js"
+    "start": "ts-node udp-server.ts",
+    "build": "esbuild --bundle --platform=node udp-client.ts --outfile=my-app/src/bundle.js"
   },
   "keywords": [],
   "author": "",
@@ -13,6 +13,7 @@
   "devDependencies": {
     "@types/node": "^18.14.2",
     "@types/screenshot-desktop": "^1.12.0",
+    "@types/ws": "^8.5.4",
     "esbuild": "^0.17.10",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
@@ -23,6 +24,7 @@
     "jimp": "^0.22.7",
     "jpeg-js": "^0.4.4",
     "robotjs": "^0.6.0",
-    "screenshot-desktop": "0.0.0-development"
+    "screenshot-desktop": "0.0.0-development",
+    "ws": "^8.12.1"
   }
 }
