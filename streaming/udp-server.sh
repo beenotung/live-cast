@@ -12,4 +12,4 @@ ffmpeg \
 	-pix_fmt yuv420p \
 	-threads 4 \
 	-f mpegts \
-	udp://0.0.0.0:1234
+	udp://0.0.0.0:8234
