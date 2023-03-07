@@ -35,12 +35,12 @@ function createPaletteCount(image: Buffer) {
   return palette
 }
 
-type Palette = number[]
-type PaletteTable = {
+export type Palette = number[]
+export type PaletteTable = {
   [code: number]: [r: number, g: number, b: number, index: number]
 }
 
-function getPalette(
+export function getPalette(
   r: number,
   g: number,
   b: number,
@@ -70,7 +70,7 @@ function getPalette(
   return match
 }
 
-function applyPalette(
+export function applyPalette(
   image: Buffer,
   palette: Palette,
   paletteTable: PaletteTable,
@@ -190,7 +190,7 @@ function sample() {
   saveCapture(capture, 'compressed.jpg')
 }
 
-function createPaletteKMean(image: Buffer) {
+export function createPaletteKMean(image: Buffer, speedup = 100) {
   let n = image.length
 
   let groups = createEvenPalette().map(code => {
@@ -200,7 +200,6 @@ function createPaletteKMean(image: Buffer) {
     return { r, g, b, count: 0 }
   })
 
-  let speedup = 100
   for (let offset = 0; offset < n; offset += 4 * speedup) {
     process.stdout.write(
       `\r createPaletteKMean ${((offset / n) * 100).toFixed(2)}%`,
@@ -272,5 +271,5 @@ function even() {
   console.timeEnd('savePalette')
 }
 
-sample()
+// sample()
 // even()
