@@ -28,9 +28,8 @@ function makeCrop(w: number, h: number, [x, y]: number[]) {
   return `${w}x${h}+${x}+${y}`
 }
 
-export function captureFullScreen() {
+export function captureFullScreen(q = 50) {
   let crop = makeCrop(w, h, [0, 0])
-  let q = 50
   let commandLine = `import -silent -window root -crop ${crop} -quality ${q} -screen jpg:-`
   let commandOptions = {
     encoding: 'buffer',
