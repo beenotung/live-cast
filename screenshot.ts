@@ -2,7 +2,7 @@
 import { exec, execSync } from 'child_process'
 import { max_size } from './config'
 
-let offset = [0, 0]
+export let offset = [0, 0]
 // let offset = [640, 1178]
 
 export let [w, h] = [1920, 1080] // 5 fps
@@ -26,6 +26,17 @@ function makeCrop(w: number, h: number, [x, y]: number[]) {
   x += offset[0]
   y += offset[1]
   return `${w}x${h}+${x}+${y}`
+}
+
+export function captureFullScreen() {
+  let crop = makeCrop(w, h, [0, 0])
+  let q = 50
+  let commandLine = `import -silent -window root -crop ${crop} -quality ${q} -screen jpg:-`
+  let commandOptions = {
+    encoding: 'buffer',
+    maxBuffer: w * h, // 2M (1920 x 1080)
+  } as const
+  return execSync(commandLine, commandOptions)
 }
 
 function create(init_q: number, partId: number, crop: string) {
