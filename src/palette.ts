@@ -2,45 +2,12 @@ import robot from 'robotjs'
 import jpeg from 'jpeg-js'
 import fs from 'fs'
 
-let counts = new Array(256 ** 3)
-
-function createPaletteCount(image: Buffer) {
-  let palette: number[] = []
-
-  let n = image.length
-
-  counts.fill(0)
-
-  let speedup = 1
-  for (let i = 0; i < n; i += 4 * speedup) {
-    let b = image[i + 0]
-    let g = image[i + 1]
-    let r = image[i + 2]
-
-    let code = (r << 16) | (g << 8) | (b << 0)
-    counts[code]++
-  }
-
-  console.time('sort colors')
-  let sorted = Object.entries(counts)
-    .filter(c => c[1] > 0)
-    .sort((a, b) => b[1] - a[1])
-  for (let i = 0; i < 256; i++) {
-    palette[i] = +sorted[i][0]
-  }
-  console.timeEnd('sort colors')
-
-  palette.sort((a, b) => b - a)
-
-  return palette
-}
-
-type Palette = number[]
-type PaletteTable = {
+export type Palette = number[]
+export type PaletteTable = {
   [code: number]: [r: number, g: number, b: number, index: number]
 }
 
-function getPalette(
+export function getPalette(
   r: number,
   g: number,
   b: number,
@@ -70,7 +37,7 @@ function getPalette(
   return match
 }
 
-function applyPalette(
+export function applyPalette(
   image: Buffer,
   palette: Palette,
   paletteTable: PaletteTable,
@@ -90,6 +57,8 @@ function applyPalette(
 }
 
 function savePalette(palette: number[]) {
+  sortPalette(palette)
+
   let rawPalette = [0]
 
   let w = 50
@@ -163,10 +132,12 @@ function sample() {
 
   saveCapture(capture, 'original.jpg')
 
-  // let palette = createEvenPalette()
+  let palette = createEmptyPalette(256)
+
+  // initEvenPalette(palette)
 
   console.time('createPaletteKMean')
-  let palette = createPaletteKMean(capture.image)
+  initPaletteKMean(palette, capture.image)
   console.timeEnd('createPaletteKMean')
 
   // console.time('createPaletteCount')
@@ -181,7 +152,7 @@ function sample() {
   savePalette(palette)
   console.timeEnd('savePalette')
 
-  let paletteTable: PaletteTable = new Array(256)
+  let paletteTable: PaletteTable = new Array(palette.length)
 
   console.time('applyPalette')
   applyPalette(capture.image, palette, paletteTable)
@@ -190,17 +161,22 @@ function sample() {
   saveCapture(capture, 'compressed.jpg')
 }
 
-function createPaletteKMean(image: Buffer) {
+export function initPaletteKMean(
+  palette: Palette,
+  image: Buffer,
+  speedup = 100,
+): void {
   let n = image.length
 
-  let groups = createEvenPalette().map(code => {
+  initEvenPalette(palette)
+
+  let groups = palette.map(code => {
     let b = (code >> 16) & 255
     let g = (code >> 8) & 255
     let r = (code >> 0) & 255
     return { r, g, b, count: 0 }
   })
 
-  let speedup = 100
   for (let offset = 0; offset < n; offset += 4 * speedup) {
     process.stdout.write(
       `\r createPaletteKMean ${((offset / n) * 100).toFixed(2)}%`,
@@ -230,47 +206,126 @@ function createPaletteKMean(image: Buffer) {
   }
   process.stdout.write(`\r                           \r`)
 
-  let palette: Palette = groups.map(
-    group => (group.r << 16) | (group.g << 8) | (group.b << 0),
+  groups.forEach(
+    (group, i) =>
+      (palette[i] = (group.r << 16) | (group.g << 8) | (group.b << 0)),
   )
-
-  return palette
 }
 
-function createEvenPalette() {
-  let palette: number[] = []
+export function createEmptyPalette(size: number): Palette {
+  return Array(size)
+}
 
-  function addColor(r: number, g: number, b: number) {
+function initEvenPalette(palette: Palette): void {
+  let i = 0
+
+  function addCode(code: number) {
+    if (i >= palette.length) return
+
+    if (palette.includes(code)) return
+
+    palette[i] = code
+    i++
+  }
+
+  function toCode(r: number, g: number, b: number) {
+    return (r << 16) | (g << 8) | (b << 0)
+  }
+
+  function expandFixed(lo: number, hi: number) {
+    let codes = [
+      toCode(lo, lo, lo),
+      toCode(hi, lo, lo),
+      toCode(lo, hi, lo),
+      toCode(lo, lo, hi),
+      toCode(lo, hi, hi),
+      toCode(hi, lo, hi),
+      toCode(hi, hi, lo),
+      toCode(hi, hi, hi),
+    ]
+    return codes
+  }
+
+  let step = 256
+  while (i < palette.length) {
+    let codes = expandFixed(0, step - 1)
+    let lo = step - 1
+    while (lo + step < 256) {
+      codes.push(...expandFixed(lo, lo + step))
+      lo += step
+    }
+    codes.sort(() => Math.random() - 0.5)
+    codes.forEach(code => addCode(code))
+    step /= 2
+  }
+}
+
+function sortPalette(palette: Palette) {
+  let [rx, ry] = [7, 0]
+  let [gx, gy] = [0, 15]
+  let [bx, by] = [15, 15]
+
+  let r_max_d = 0
+  let g_max_d = 0
+  let b_max_d = 0
+
+  palette.forEach((_, i) => {
+    let x = i % 16
+    let y = (i - x) / 16
+
+    let rd = Math.sqrt((rx - x) ** 2 + (ry - y) ** 2)
+    if (rd > r_max_d) r_max_d = rd
+
+    let gd = Math.sqrt((gx - x) ** 2 + (gy - y) ** 2)
+    if (gd > g_max_d) g_max_d = gd
+
+    let bd = Math.sqrt((bx - x) ** 2 + (by - y) ** 2)
+    if (bd > b_max_d) b_max_d = bd
+  })
+
+  let input = palette.slice()
+
+  palette.forEach((_, i) => {
+    let x = i % 16
+    let y = (i - x) / 16
+
+    let r = Math.round(
+      (1 - Math.sqrt((x - rx) ** 2 + (y - ry) ** 2) / r_max_d) * 255,
+    )
+    let g = Math.round(
+      (1 - Math.sqrt((x - gx) ** 2 + (y - gy) ** 2) / g_max_d) * 255,
+    )
+    let b = Math.round(
+      (1 - Math.sqrt((x - bx) ** 2 + (y - by) ** 2) / b_max_d) * 255,
+    )
+
     let code = (r << 16) | (g << 8) | (b << 0)
-    palette.push(code)
-  }
-  addColor(0, 0, 0)
-  addColor(255, 0, 0)
-  addColor(0, 255, 0)
-  addColor(0, 0, 255)
-  addColor(0, 255, 255)
-  addColor(255, 0, 255)
-  addColor(255, 255, 0)
-  addColor(255, 255, 255)
 
-  for (let i = palette.length; i < 256; i++) {
-    let r = Math.floor(Math.random() * 256)
-    let g = Math.floor(Math.random() * 256)
-    let b = Math.floor(Math.random() * 256)
-    addColor(r, g, b)
-  }
-  palette.sort((a, b) => b - a)
+    let j = input
+      .map((code, i) => {
+        let d2 =
+          ((r - (code >> 16)) & 255) ** 2 +
+          ((g - (code >> 8)) & 255) ** 2 +
+          ((b - (code >> 0)) & 255) ** 2
+        return [d2, i]
+      })
+      .sort((a, b) => a[0] - b[0])[0][1]
 
-  return palette
+    palette[i] = code
+
+    palette[i] = input[j]
+    input.splice(j, 1)
+  })
 }
 
 function even() {
-  let palette = createEvenPalette()
+  let palette = createEmptyPalette(256)
+  initEvenPalette(palette)
 
   console.time('savePalette')
   savePalette(palette)
   console.timeEnd('savePalette')
 }
 
-sample()
+// sample()
 // even()

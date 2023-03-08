@@ -6,7 +6,14 @@
     <link rel="stylesheet" href="index.css" />
   </head>
   <body>
-    <canvas id="remote"></canvas>
+    <div id="msg" style="padding-inline-start: 1rem">
+      <p>
+        If you see this message, it means you haven't build the client js
+        bundle.
+      </p>
+      <p>Please check the error message during installation.</p>
+    </div>
+    <canvas hidden id="remote"></canvas>
     <script src="bundle.js"></script>
   </body>
 </html>
