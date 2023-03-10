@@ -1,3 +1,5 @@
+document.querySelector('#msg')?.remove()
+
 import { clientPort, max_size } from './config'
 import { getFPS, startFPS } from './fps'
 import { decodeColor } from './color'
@@ -5,6 +7,7 @@ import jpeg from 'jpeg-js'
 import { h, parts, partsCount, w } from './screenshot'
 
 let canvas = document.querySelector('canvas#remote') as HTMLCanvasElement
+canvas.hidden = false
 
 canvas.width = w
 canvas.height = h
