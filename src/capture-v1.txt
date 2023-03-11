@@ -1,0 +1,174 @@
+import robot from 'robotjs'
+import {
+  createEmptyPalette,
+  initEvenPalette,
+  initPaletteKMean,
+  PaletteTable,
+  saveCapture,
+} from './palette'
+import { h, offset, w } from './screenshot'
+import zlib from 'zlib'
+import { max_size } from './config'
+import jpeg from 'jpeg-js'
+import { writeFileSync } from 'fs'
+
+let paletteSampleStep = 4 * 1
+
+let paletteSize = 256
+// paletteSize = 128
+paletteSize = 64
+// paletteSize = 32
+paletteSize = 16
+// paletteSize = 8
+// paletteSize = 4
+// paletteSize = 3
+// paletteSize = 2
+let palette = createEmptyPalette(paletteSize)
+initEvenPalette(palette)
+let paletteTable: PaletteTable = new Array(256 ** 3)
+
+let colorGroup = palette.map((code, i) => {
+  let r = (code >> 16) & 255
+  let g = (code >> 8) & 255
+  let b = (code >> 0) & 255
+  return { r, g, b, index: i, count: 0 }
+})
+
+function findClosestColorGroup(r: number, g: number, b: number) {
+  let minGroup = colorGroup[0]
+  let dr = r - minGroup.r
+  let dg = g - minGroup.g
+  let db = b - minGroup.b
+  let minD2 = dr * dr + dg * dg + db * db
+
+  for (let i = 1; i < paletteSize; i++) {
+    let eachGroup = colorGroup[i]
+    dr = r - eachGroup.r
+    dg = g - eachGroup.g
+    db = b - eachGroup.b
+    let eachD2 = dr * dr + dg * dg + db * db
+    if (eachD2 < minD2) {
+      minD2 = eachD2
+      minGroup = eachGroup
+    }
+  }
+
+  return minGroup
+}
+
+let message = Buffer.alloc(max_size)
+let encodedImage = Buffer.alloc(w * h)
+
+export function capture() {
+  let capture = robot.screen.capture(offset[0], offset[1], w, h)
+  let image: Buffer = capture.image
+  let n = image.length
+
+  // sample palette from image
+  colorGroup.forEach(group => (group.count = 0))
+  for (let i = 0; i < n; i += paletteSampleStep) {
+    let b = image[i + 0]
+    let g = image[i + 1]
+    let r = image[i + 2]
+
+    let group = findClosestColorGroup(r, g, b)
+
+    let oldCount = group.count
+    let newCount = oldCount + 1
+    group.r = (group.r * oldCount + r) / newCount
+    group.g = (group.g * oldCount + g) / newCount
+    group.b = (group.b * oldCount + b) / newCount
+    group.count = newCount
+  }
+
+  // update color palette
+  paletteTable.fill(null)
+  colorGroup.forEach(
+    (group, i) =>
+      (palette[i] = (group.r << 16) | (group.g << 8) | (group.b << 0)),
+  )
+
+  // encode image
+  let pix = 0
+  for (let i = 0; i < n; i += 4) {
+    let b = image[i + 0]
+    let g = image[i + 1]
+    let r = image[i + 2]
+    let code = (r << 16) | (g << 8) | (b << 0)
+    let match = paletteTable[code]
+    if (!match) {
+      let group = findClosestColorGroup(r, g, b)
+      match = [group.r, group.g, group.b, group.index]
+      paletteTable[code] = match
+    }
+    let index = match[3]
+    encodedImage[pix] = index
+    pix++
+  }
+
+  // compress image
+  let start = 0
+  let end = encodedImage.length
+  let len = end
+  let compressedImage = zlib.gzipSync(encodedImage)
+  while (compressedImage.length > max_size) {
+    let excess = compressedImage.length - max_size
+    let delta = Math.ceil(excess / w / 5) * w * 5 * 10
+    len -= delta
+    start =
+      Math.floor((Math.random() * (encodedImage.length - len)) / w / 5) * w * 5
+    end = start + len
+    compressedImage = zlib.gzipSync(encodedImage.subarray(start, end))
+    let rate = len / compressedImage.length
+    console.log({
+      start,
+      end,
+      len,
+      delta,
+      rate,
+      excess,
+      c: compressedImage.length,
+      r: compressedImage.length / max_size,
+    })
+  }
+  console.log({
+    paletteSize,
+    pix,
+    start,
+    end,
+    len,
+    c: compressedImage.length,
+    r: compressedImage.length / max_size,
+  })
+
+  saveCapture(capture, 'sample-in.jpg')
+
+  if (compressedImage.length < max_size) {
+  }
+
+  return compressedImage
+}
+
+function test() {
+  let compressedImage = capture()
+  let encodedImage = zlib.gunzipSync(compressedImage)
+  let n = w * h * 4
+  let rawImage = Buffer.alloc(n)
+
+  // decode image
+  let pix = 0
+  for (let i = 0; i < n; i += 4, pix++) {
+    let index = encodedImage[pix]
+    let code = palette[index]
+    let r = (code >> 16) & 255
+    let g = (code >> 8) & 255
+    let b = (code >> 0) & 255
+    rawImage[i + 0] = r
+    rawImage[i + 1] = g
+    rawImage[i + 2] = b
+  }
+  let jpegImage = jpeg.encode({ width: w, height: h, data: rawImage })
+  writeFileSync('sample-out.jpg', jpegImage.data)
+}
+
+test()

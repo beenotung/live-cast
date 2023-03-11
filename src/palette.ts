@@ -3,9 +3,9 @@ import jpeg from 'jpeg-js'
 import fs from 'fs'
 
 export type Palette = number[]
-export type PaletteTable = {
-  [code: number]: [r: number, g: number, b: number, index: number]
-}
+export type PaletteTableItem = [r: number, g: number, b: number, index: number]
+// code -> [r,g,b,index]
+export type PaletteTable = Array<PaletteTableItem | null>
 
 export function getPalette(
   r: number,
@@ -14,7 +14,7 @@ export function getPalette(
   palette: Palette,
   paletteTable: PaletteTable,
 ) {
-  let code = (r << 16) + (g << 8) + (b << 0)
+  let code = (r << 16) | (g << 8) | (b << 0)
 
   let match = paletteTable[code]
   if (!match) {
@@ -96,7 +96,7 @@ function savePalette(palette: number[]) {
   fs.writeFileSync('palette.jpg', paletteImage.data)
 }
 
-function saveCapture(capture: robot.Bitmap, file: string) {
+export function saveCapture(capture: robot.Bitmap, file: string) {
   console.time('save ' + file)
 
   let output = [0]
@@ -216,7 +216,7 @@ export function createEmptyPalette(size: number): Palette {
   return Array(size)
 }
 
-function initEvenPalette(palette: Palette): void {
+export function initEvenPalette(palette: Palette): void {
   let i = 0
 
   function addCode(code: number) {
