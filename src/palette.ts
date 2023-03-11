@@ -198,11 +198,11 @@ export function initPaletteKMean(
       .sort((a, b) => a[1] - b[1])[0][0]
 
     let oldCount = group.count
-    let newCOunt = oldCount + 1
-    group.r = (group.r * oldCount + r) / newCOunt
-    group.g = (group.g * oldCount + g) / newCOunt
-    group.b = (group.b * oldCount + b) / newCOunt
-    group.count = newCOunt
+    let newCount = oldCount + 1
+    group.r = (group.r * oldCount + r) / newCount
+    group.g = (group.g * oldCount + g) / newCount
+    group.b = (group.b * oldCount + b) / newCount
+    group.count = newCount
   }
   process.stdout.write(`\r                           \r`)
 
