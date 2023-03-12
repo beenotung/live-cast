@@ -1,7 +1,7 @@
 document.querySelector('#msg')?.remove()
 
 import dgram from 'dgram'
-import { clientPort, h, w } from './config'
+import { clientPort, h, paletteSize, w } from './config'
 import { getFPS, startFPS } from './fps'
 import zlib from 'zlib'
 
@@ -28,7 +28,6 @@ context.putImageData(imageData, 0, 0)
 
 let frame = 0
 
-let paletteSize = 16
 let palette = new Array<{ r: number; g: number; b: number }>(paletteSize)
 
 socket.on('listening', () => {

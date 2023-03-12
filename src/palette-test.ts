@@ -2,7 +2,6 @@ import robot from 'robotjs'
 import jpeg from 'jpeg-js'
 import fs from 'fs'
 import {
-  saveCapture,
   createEmptyPalette,
   initPaletteKMean,
   PaletteTable,
@@ -10,6 +9,7 @@ import {
   initEvenPalette,
   Palette,
 } from './palette'
+import { saveCapture } from './dev-utils'
 
 function sample() {
   console.time('capture')

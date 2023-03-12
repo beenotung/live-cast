@@ -8,3 +8,5 @@ export let offset = [0, 0]
 // let offset = [640, 1178]
 
 export let [w, h] = [1920, 1080]
+
+export let paletteSize = 16
