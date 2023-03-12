@@ -30,7 +30,8 @@ function tick() {
     frame++
     let rate = getFPS().toFixed(0)
     process.stdout.write(`\r  frame ${frame} | ${rate} fps  `)
-    setImmediate(tick)
+    // setImmediate(tick)
+    setTimeout(tick, 1000 / 3)
   })
 }
 
