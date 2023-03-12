@@ -2,7 +2,6 @@ import robot from 'robotjs'
 import {
   createEmptyPalette,
   initEvenPalette,
-  initPaletteKMean,
   PaletteTable,
   saveCapture,
 } from './palette'
@@ -11,6 +10,8 @@ import zlib from 'zlib'
 import { max_size } from './config'
 import jpeg from 'jpeg-js'
 import { writeFileSync } from 'fs'
+
+let [dx, dy] = offset
 
 let paletteSampleStep = 4 * 1
 
@@ -51,9 +52,8 @@ function findClosestColorGroup(r: number, g: number, b: number) {
 export let message = Buffer.alloc(max_size)
 let encodedImage = Buffer.alloc((w * h) / 2)
 
-export function capture() {
-  let capture = robot.screen.capture(offset[0], offset[1], w, h)
-  saveCapture(capture, 'sample-in.jpg')
+export function capture(capture = robot.screen.capture(dx, dy, w, h)) {
+  let mouse = robot.getMousePos()
   let image: Buffer = capture.image
   let n = image.length
 
@@ -106,12 +106,24 @@ export function capture() {
     pix++
   }
 
+  // compose message
+  let offset = 0
+  message[offset++] = (mouse.x >> 8) & 255
+  message[offset++] = (mouse.x >> 0) & 255
+  message[offset++] = (mouse.y >> 8) & 255
+  message[offset++] = (mouse.y >> 0) & 255
+  for (let group of colorGroup) {
+    message[offset++] = Math.round(group.r)
+    message[offset++] = Math.round(group.g)
+    message[offset++] = Math.round(group.b)
+  }
+
   // compress image
   let start = 0
   let end = encodedImage.length
   let len = end
   let compressedImage = zlib.gzipSync(encodedImage)
-  let max_payload = max_size - 1
+  let max_payload = max_size - offset - 1
   while (compressedImage.length > max_payload) {
     let excess = compressedImage.length - max_payload
     let delta = Math.ceil(excess / w / 5) * w * 5 * 10
@@ -119,44 +131,57 @@ export function capture() {
     start =
       Math.floor((Math.random() * (encodedImage.length - len)) / w / 5) * w * 5
     end = start + len
+    // console.log({ delta, c: compressedImage.length })
     compressedImage = zlib.gzipSync(encodedImage.subarray(start, end))
   }
 
-  message[0] = start / w / 5
-  compressedImage.copy(message, 1)
+  message[offset++] = start / w / 5
+  compressedImage.copy(message, offset)
 
-  len = compressedImage.length + 1
+  len = compressedImage.length + offset
   return len
 }
 
 function test() {
-  let len = capture()
+  type Color = { r: number; g: number; b: number }
 
-  let compressedImage = message.subarray(1, 1 + len)
+  let captureImage = robot.screen.capture(dx, dy, w, h)
+  saveCapture(captureImage, 'sample-in.jpg')
+  let len = capture(captureImage)
+
+  let offset = 0
+  let x = (message[offset++] << 8) | (message[offset++] << 0)
+  let y = (message[offset++] << 8) | (message[offset++] << 0)
+  let palette = new Array<Color>(16)
+  for (let i = 0; i < 16; i++) {
+    let r = message[offset++]
+    let g = message[offset++]
+    let b = message[offset++]
+    palette[i] = { r, g, b }
+  }
+
+  let start = message[offset++] * w * 5
+  let compressedImage = message.subarray(offset, len)
   let encodedImage = zlib.gunzipSync(compressedImage)
   let n = encodedImage.length
-
-  let start = message[0] * w * 5
 
   let rawImage = Buffer.alloc(w * h * 4)
 
   // decode image
-  function putIndex(i: number, code: number) {
-    let r = (code >> 16) & 255
-    let g = (code >> 8) & 255
-    let b = (code >> 0) & 255
-    rawImage[i + 0] = r
-    rawImage[i + 1] = g
-    rawImage[i + 2] = b
-  }
   for (let pix = 0, i = start * 4 * 2; pix < n; pix++) {
     let index = encodedImage[pix]
     let hi = (index >> 4) & 15
     let lo = (index >> 0) & 15
-    putIndex(i, palette[hi])
-    i += 4
-    putIndex(i, palette[lo])
-    i += 4
+    let color = palette[hi]
+    rawImage[i++] = color.r
+    rawImage[i++] = color.g
+    rawImage[i++] = color.b
+    i++
+    color = palette[lo]
+    rawImage[i++] = color.r
+    rawImage[i++] = color.g
+    rawImage[i++] = color.b
+    i++
   }
   let jpegImage = jpeg.encode({ width: w, height: h, data: rawImage })
   writeFileSync('sample-out.jpg', jpegImage.data)
