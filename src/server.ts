@@ -1,9 +1,8 @@
 import dgram from 'dgram'
 import os from 'os'
 import { getFPS, startFPS } from './fps'
-import { clientPort, max_size, serverPort } from './config'
-import { encodeColor } from './color'
-import { Capture, captures, partsCount } from './screenshot'
+import { clientPort, serverPort } from './config'
+import { capture, message } from './capture-v2'
 
 let socket = dgram.createSocket('udp4')
 
@@ -21,21 +20,18 @@ console.log({ broadcastAddress })
 
 let frame = 0
 
-function startPart(capture: Capture) {
-  function tick() {
-    let data = capture()
-    socket.send(data, clientPort, broadcastAddress, err => {
-      if (err) {
-        console.log(err)
-        return
-      }
-      frame++
-      let rate = (getFPS() / partsCount).toFixed(0)
-      process.stdout.write(`\r  frame ${frame} | ${rate} fps  `)
-      setImmediate(tick)
-    })
-  }
-  setImmediate(tick)
+function tick() {
+  let len = capture()
+  socket.send(message, 0, len, clientPort, broadcastAddress, err => {
+    if (err) {
+      console.log(err)
+      return
+    }
+    frame++
+    let rate = getFPS().toFixed(0)
+    process.stdout.write(`\r  frame ${frame} | ${rate} fps  `)
+    setImmediate(tick)
+  })
 }
 
 socket.bind(serverPort, () => {
@@ -43,5 +39,5 @@ socket.bind(serverPort, () => {
   console.log('UDP server listening on', address)
   socket.setBroadcast(true)
   startFPS()
-  captures.forEach(capture => startPart(capture))
+  setImmediate(tick)
 })

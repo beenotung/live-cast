@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node src/udp-server.ts",
-    "build": "esbuild --bundle --platform=node src/udp-client.ts --outfile=my-app/src/bundle.js"
+    "start": "ts-node src/server.ts",
+    "build": "esbuild --bundle --platform=node src/client.ts --outfile=my-app/src/bundle.js"
   },
   "keywords": [],
   "author": "",

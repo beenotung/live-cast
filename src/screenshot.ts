@@ -1,12 +1,8 @@
 // using imagemagick
-import { exec, execSync } from 'child_process'
-import { max_size } from './config'
+import { execSync } from 'child_process'
+import { h, max_size, offset, w } from './config'
 
-export let offset = [0, 0]
-// export let offset = [1680, 0]
-// let offset = [640, 1178]
-
-export let [w, h] = [1920, 1080] // 5 fps
+// export let [w, h] = [1920, 1080] // 5 fps
 // export let [w, h] = [1600, 900] // 6 fps
 // export let [w, h] = [1280, 720] // 10 fps
 // export let [w, h] = [1024, 576] // 12 fps

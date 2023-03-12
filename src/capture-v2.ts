@@ -5,9 +5,8 @@ import {
   PaletteTable,
   saveCapture,
 } from './palette'
-import { h, offset, w } from './screenshot'
 import zlib from 'zlib'
-import { max_size } from './config'
+import { h, max_size, offset, w } from './config'
 import jpeg from 'jpeg-js'
 import { writeFileSync } from 'fs'
 
@@ -143,8 +142,6 @@ export function capture(capture = robot.screen.capture(dx, dy, w, h)) {
 }
 
 function test() {
-  type Color = { r: number; g: number; b: number }
-
   let captureImage = robot.screen.capture(dx, dy, w, h)
   saveCapture(captureImage, 'sample-in.jpg')
   let len = capture(captureImage)
@@ -152,8 +149,8 @@ function test() {
   let offset = 0
   let x = (message[offset++] << 8) | (message[offset++] << 0)
   let y = (message[offset++] << 8) | (message[offset++] << 0)
-  let palette = new Array<Color>(16)
-  for (let i = 0; i < 16; i++) {
+  let palette = new Array<{ r: number; g: number; b: number }>(paletteSize)
+  for (let i = 0; i < paletteSize; i++) {
     let r = message[offset++]
     let g = message[offset++]
     let b = message[offset++]

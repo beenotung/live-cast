@@ -1,11 +1,9 @@
 document.querySelector('#msg')?.remove()
 
 import dgram from 'dgram'
-import { clientPort, max_size } from './config'
+import { clientPort, h, w } from './config'
 import { getFPS, startFPS } from './fps'
-import { decodeColor } from './color'
-import jpeg from 'jpeg-js'
-import { h, parts, partsCount, w } from './screenshot'
+import zlib from 'zlib'
 
 let socket = dgram.createSocket('udp4')
 
@@ -30,6 +28,9 @@ context.putImageData(imageData, 0, 0)
 
 let frame = 0
 
+let paletteSize = 16
+let palette = new Array<{ r: number; g: number; b: number }>(paletteSize)
+
 socket.on('listening', () => {
   let address = socket.address()
   console.log('UDP client listening on', address)
@@ -37,46 +38,50 @@ socket.on('listening', () => {
   startFPS()
 })
 
-socket.on('message', (msg, rinfo) => {
+socket.on('message', (message, rinfo) => {
   let size = rinfo.size
 
-  let partId = msg[0] as 0
-  msg[0] = 255
+  let len = message.length
 
-  let rawData = jpeg.decode(msg).data
+  let offset = 0
+  let x = (message[offset++] << 8) | (message[offset++] << 0)
+  let y = (message[offset++] << 8) | (message[offset++] << 0)
+  for (let i = 0; i < paletteSize; i++) {
+    let r = message[offset++]
+    let g = message[offset++]
+    let b = message[offset++]
+    palette[i] = { r, g, b }
+  }
 
-  let [offsetX, offsetY] = parts[partId]
+  let start = message[offset++] * w * 5
+  let compressedImage = message.subarray(offset, len)
+  let encodedImage = zlib.gunzipSync(compressedImage)
+  let n = encodedImage.length
 
-  let i = 0
-  for (let yi = 0; yi < parts.h; yi++) {
-    let y = offsetY + yi
-
-    for (let xi = 0; xi < parts.w; xi++) {
-      let x = offsetX + xi
-
-      let offset = (y * w + x) * 4
-
-      let r = rawData[i + 0]
-      let g = rawData[i + 1]
-      let b = rawData[i + 2]
-
-      data[offset + 0] = r
-      data[offset + 1] = g
-      data[offset + 2] = b
-
-      i += 4
-    }
+  // decode image
+  for (let pix = 0, i = start * 4 * 2; pix < n; pix++) {
+    let index = encodedImage[pix]
+    let hi = (index >> 4) & 15
+    let lo = (index >> 0) & 15
+    let color = palette[hi]
+    data[i++] = color.r
+    data[i++] = color.g
+    data[i++] = color.b
+    i++
+    color = palette[lo]
+    data[i++] = color.r
+    data[i++] = color.g
+    data[i++] = color.b
+    i++
   }
 
   context.putImageData(imageData, 0, 0)
 
   frame++
 
-  let rate = (getFPS() / partsCount).toFixed(0)
+  let rate = getFPS().toFixed(0)
 
-  process.stdout.write(
-    `\r  frame ${frame} | ${rate} fps | size ${size} | p ${partId}  `,
-  )
+  process.stdout.write(`\r  frame ${frame} | ${rate} fps | size ${size}  `)
 })
 
 socket.bind(clientPort)
