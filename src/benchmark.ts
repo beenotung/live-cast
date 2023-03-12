@@ -1,24 +1,11 @@
-import robot from 'robotjs'
-import jpeg from 'jpeg-js'
-import { captureFullScreen, h, w } from './screenshot'
+import { capture } from './capture-v2'
+import { getFPS, startFPS } from './fps'
 
+startFPS()
 function test() {
-  let start = Date.now()
-  let raw = robot.screen.capture()
-  let r = Date.now() - start
-  jpeg.encode({
-    width: raw.width,
-    height: raw.height,
-    data: raw.image,
-  })
-  let r_en = Date.now() - start
-
-  start = Date.now()
-  let buffer = captureFullScreen(50)
-  jpeg.decode(buffer)
-  let f = Date.now() - start
-
-  console.log({ r, r_en, f })
+  capture()
+  let fps = getFPS().toFixed(0)
+  process.stdout.write(`\r ${fps} fps  `)
   setImmediate(test)
 }
 
