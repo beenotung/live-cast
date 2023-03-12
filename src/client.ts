@@ -7,6 +7,7 @@ import zlib from 'zlib'
 
 let socket = dgram.createSocket('udp4')
 
+let cursor = document.querySelector('img#cursor') as HTMLImageElement
 let canvas = document.querySelector('canvas#remote') as HTMLCanvasElement
 canvas.hidden = false
 
@@ -75,6 +76,7 @@ socket.on('message', (message, rinfo) => {
   }
 
   context.putImageData(imageData, 0, 0)
+  context.drawImage(cursor, x, y)
 
   frame++
 

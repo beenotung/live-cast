@@ -9,3 +9,9 @@ canvas#remote {
   background-color: #c0ffee;
   width: 100%;
 }
+
+#cursor {
+  position: absolute;
+  top: 100vh;
+  left: 100vw;
+}
