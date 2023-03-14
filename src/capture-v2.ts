@@ -99,10 +99,10 @@ export function capture(capture = robot.screen.capture(dx, dy, w, h)) {
 
   // compose message
   let offset = 0
-  message[offset++] = (mouse.x >> 8) & 255
-  message[offset++] = (mouse.x >> 0) & 255
-  message[offset++] = (mouse.y >> 8) & 255
-  message[offset++] = (mouse.y >> 0) & 255
+  message[offset++] = ((mouse.x - dx) >> 8) & 255
+  message[offset++] = ((mouse.x - dx) >> 0) & 255
+  message[offset++] = ((mouse.y - dy) >> 8) & 255
+  message[offset++] = ((mouse.y - dy) >> 0) & 255
   for (let group of colorGroup) {
     message[offset++] = Math.round(group.r)
     message[offset++] = Math.round(group.g)
