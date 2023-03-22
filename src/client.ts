@@ -80,7 +80,7 @@ socket.on('message', (message, rinfo) => {
 
   frame++
 
-  let rate = getFPS().toFixed(0)
+  let rate = getFPS().toFixed(1)
 
   process.stdout.write(`\r  frame ${frame} | ${rate} fps | size ${size}  `)
 })

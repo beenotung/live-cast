@@ -29,7 +29,7 @@ function tick() {
       return
     }
     frame++
-    let rate = getFPS().toFixed(0)
+    let rate = getFPS().toFixed(1)
     process.stdout.write(`\r  frame ${frame} | ${rate} fps  `)
     tickLater()
   })

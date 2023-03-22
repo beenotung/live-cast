@@ -1,5 +1,5 @@
 let acc = 0
-let alpha = 0.5
+let alpha = 0.9
 let beta = 1 - alpha
 
 let lastTime = 0
