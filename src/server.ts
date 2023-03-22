@@ -3,6 +3,7 @@ import os from 'os'
 import { getFPS, startFPS } from './fps'
 import { clientPort, serverPort } from './config'
 import { capture, message } from './capture-v2'
+import { env } from './env'
 
 let socket = dgram.createSocket('udp4')
 
@@ -30,9 +31,15 @@ function tick() {
     frame++
     let rate = getFPS().toFixed(0)
     process.stdout.write(`\r  frame ${frame} | ${rate} fps  `)
-    // setImmediate(tick)
-    setTimeout(tick, 1000 / 5)
+    tickLater()
   })
+}
+
+let tickLater: () => void = () => setImmediate(tick)
+
+if (env.FPS > 0) {
+  let interval = 1000 / env.FPS
+  tickLater = () => setTimeout(tick, interval)
 }
 
 socket.bind(serverPort, () => {

@@ -20,9 +20,11 @@
     "typescript": "^4.9.5"
   },
   "dependencies": {
+    "dotenv": "^16.0.3",
     "electron": "^23.1.1",
     "jimp": "^0.22.7",
     "jpeg-js": "^0.4.4",
+    "populate-env": "^2.0.0",
     "robotjs": "^0.6.0",
     "screenshot-desktop": "0.0.0-development",
     "ws": "^8.12.1"
