@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const { execSync } = require('child_process')
 const { writeFileSync } = require('fs')
 
@@ -17,5 +19,5 @@ function run(cmd, { cwd } = {}) {
 
 run('npm install')
 run('npm run build')
-run('npm install', { cwd: 'my-app' })
-run('npm start', { cwd: 'my-app' })
+run('npm install', { cwd: 'live-cast-client' })
+run('npm start', { cwd: 'live-cast-client' })
