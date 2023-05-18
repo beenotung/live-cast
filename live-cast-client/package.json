@@ -4,6 +4,9 @@
   "version": "1.0.0",
   "description": "My Electron application description",
   "main": "src/index.js",
+  "bin": {
+    "live-cast-client": "cli.js"
+  },
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
@@ -17,14 +20,12 @@
   },
   "license": "MIT",
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.0"
-  },
-  "devDependencies": {
     "@electron-forge/cli": "^6.0.5",
     "@electron-forge/maker-deb": "^6.0.5",
     "@electron-forge/maker-rpm": "^6.0.5",
     "@electron-forge/maker-squirrel": "^6.0.5",
     "@electron-forge/maker-zip": "^6.0.5",
-    "electron": "23.1.1"
+    "electron": "23.1.1",
+    "electron-squirrel-startup": "^1.0.0"
   }
 }
