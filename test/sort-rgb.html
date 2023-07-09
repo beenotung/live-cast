@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>sort-rgb</title>
+    <style>
+      body {
+        background-color: black;
+      }
+      canvas {
+        image-rendering: pixelated;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas></canvas>
+    <script>
+      let rate = 20
+      let w = 25
+      let h = 35
+      let canvas = document.querySelector('canvas')
+      canvas.width = w
+      canvas.height = h
+      canvas.style.width = w * rate + 'px'
+      canvas.style.height = h * rate + 'px'
+      let context = canvas.getContext('2d')
+      let imageData = context.getImageData(0, 0, w, h)
+      let data = imageData.data
+
+      let fixedPoints = []
+
+      function init() {
+        let cx = w / 2
+        let cy = h / 2
+        let r = Math.min(cx, cy)
+        fixedPoints.push({
+          x: cx,
+          y: cy - r,
+          r: 255,
+          g: 0,
+          b: 0,
+        })
+
+        let offset = 0
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            data[offset + 0] = Math.floor(Math.random() * 256)
+            data[offset + 1] = Math.floor(Math.random() * 256)
+            data[offset + 2] = Math.floor(Math.random() * 256)
+            data[offset + 3] = 255
+            offset += 4
+          }
+        }
+        context.putImageData(imageData, 0, 0)
+      }
+      init()
+
+      let dist = dist_YCbCr
+      function dist_rgb(aOffset, bOffset) {
+        let r = data[aOffset + 0] - data[bOffset + 0]
+        let g = data[aOffset + 1] - data[bOffset + 1]
+        let b = data[aOffset + 2] - data[bOffset + 2]
+        return r * r + g * g + b * b
+      }
+      function dist_YCbCr(aOffset, bOffset) {
+        let a = rgbToYCbCr(
+          data[aOffset + 0],
+          data[aOffset + 1],
+          data[aOffset + 2],
+        )
+        let b = rgbToYCbCr(
+          data[bOffset + 0],
+          data[bOffset + 1],
+          data[bOffset + 2],
+        )
+        let Y = a.Y - b.Y
+        let Cb = a.Cb - b.Cb
+        let Cr = a.Cr - b.Cr
+        return Y * Y + Cb * Cb + Cr * Cr
+      }
+      // reference: https://en.wikipedia.org/wiki/YCbCr
+      function rgbToYCbCr(R, G, B) {
+        let Y =
+          16 + ((65.738 * R) >> 8) + ((129.057 * G) >> 8) + ((25.064 * B) >> 8)
+        let Cb =
+          128 - ((37.945 * R) >> 8) - ((74.494 * G) >> 8) + ((112.439 * B) >> 8)
+        let Cr =
+          128 + ((112.439 * R) >> 8) - ((94.154 * G) >> 8) - ((18.285 * B) >> 8)
+        return { Y, Cb, Cr }
+      }
+      function swap(aOffset, bOffset) {
+        for (let i = 0; i < 3; i++) {
+          let tmp = data[aOffset + i]
+          data[aOffset + i] = data[bOffset + i]
+          data[bOffset + i] = tmp
+        }
+      }
+      function batch() {
+        let step = Math.random() < 0.5 ? 4 : w * 4
+        let aOffset = Math.floor(Math.random() * w * h) * 4
+        let bOffset = aOffset + step
+        let cOffset = bOffset + step
+        if (cOffset >= w * h * 4) {
+          return
+        }
+
+        let a_b_dist = dist(aOffset, bOffset)
+        let b_c_dist = dist(bOffset, cOffset)
+        let a_c_dist = dist(aOffset, cOffset)
+
+        if (a_b_dist <= a_c_dist) return
+        if (b_c_dist <= a_c_dist) return
+
+        if (
+          // Math.random() < 0.5
+          1
+        ) {
+          swap(aOffset, bOffset)
+        } else {
+          swap(bOffset, cOffset)
+        }
+        swapped++
+      }
+      let swapped = 0
+      function tick() {
+        swapped = 0
+        for (let i = 0; i < 10000; i++) {
+          batch()
+        }
+        if (swapped < 1) {
+          console.log('sorted')
+          return
+        }
+        context.putImageData(imageData, 0, 0)
+        requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    </script>
+  </body>
+</html>

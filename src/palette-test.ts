@@ -1,15 +1,12 @@
 import robot from 'robotjs'
 import jpeg from 'jpeg-js'
 import fs from 'fs'
-import {
-  createEmptyPalette,
-  initPaletteKMean,
-  PaletteTable,
-  applyPalette,
-  initEvenPalette,
-  Palette,
-} from './palette'
+import { PaletteTable, Palette } from './palette'
+import * as paletteRGB from './palette-rgb'
+import * as paletteYCbCr from './palette-YCbCr'
 import { saveCapture } from './dev-utils'
+
+type PaletteLib = typeof paletteRGB | typeof paletteYCbCr
 
 function sample() {
   console.time('capture')
@@ -17,6 +14,17 @@ function sample() {
   console.timeEnd('capture')
 
   saveCapture(capture, 'original.jpg')
+
+  sampleWithPalette(capture, paletteRGB, 'rgb')
+  sampleWithPalette(capture, paletteYCbCr, 'YCbCr')
+}
+
+function sampleWithPalette(
+  capture: robot.Bitmap,
+  paletteLib: PaletteLib,
+  mode: string,
+) {
+  const { createEmptyPalette, initPaletteKMean, applyPalette } = paletteLib
 
   let palette = createEmptyPalette(256)
 
@@ -35,28 +43,30 @@ function sample() {
   // console.timeEnd('createSamplePalette')
 
   console.time('savePalette')
-  savePalette(palette)
+  savePalette(palette, `palette-${mode}.jpg`)
   console.timeEnd('savePalette')
 
   let paletteTable: PaletteTable = new Array(palette.length)
 
   console.time('applyPalette')
-  applyPalette(capture.image, palette, paletteTable)
+  applyPalette(capture.image, palette, paletteTable as any)
   console.timeEnd('applyPalette')
 
-  saveCapture(capture, 'compressed.jpg')
+  saveCapture(capture, `compressed-${mode}.jpg`)
 }
 
-function even() {
+function even(paletteLib: PaletteLib, mode: string) {
+  const { createEmptyPalette, initEvenPalette } = paletteLib
+
   let palette = createEmptyPalette(256)
   initEvenPalette(palette)
 
   console.time('savePalette')
-  savePalette(palette)
+  savePalette(palette, `palette-${mode}.jpg`)
   console.timeEnd('savePalette')
 }
 
-function savePalette(palette: number[]) {
+function savePalette(palette: number[], file: string) {
   sortPalette(palette)
 
   let rawPalette = [0]
@@ -93,7 +103,7 @@ function savePalette(palette: number[]) {
     height: H,
     data: rawPalette,
   })
-  fs.writeFileSync('palette.jpg', paletteImage.data)
+  fs.writeFileSync(file, paletteImage.data)
 }
 
 function sortPalette(palette: Palette) {
@@ -155,4 +165,5 @@ function sortPalette(palette: Palette) {
 }
 
 sample()
-// even()
+// even(paletteRGB, 'rgb')
+// even(paletteYCbCr, 'YCbCr')
