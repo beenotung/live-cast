@@ -15,15 +15,8 @@ type code = number
 
 export type Palette = code[]
 
-export type PaletteTableItem = [
-  r: number,
-  g: number,
-  b: number,
-  Y: number,
-  Cb: number,
-  Cr: number,
-  index: number,
-]
+export type PaletteTableItem = [color: ColorArray, index: number]
+export const Index = 1
 
 // code -> PaletteTableItem
 export type PaletteTable = Array<PaletteTableItem | null>
@@ -41,18 +34,17 @@ export function getPalette(
   if (!match) {
     let color: ColorArray = [r, g, b, 0, 0, 0]
     rgbToYCbCr(color)
-    let [_r, _g, _b, Y, Cb, Cr] = color
     match = palette
       .map((code, i): [d2: number, item: PaletteTableItem] => {
         let pr = (code >> 16) & 255
         let pg = (code >> 8) & 255
         let pb = (code >> 0) & 255
-        let item: PaletteTableItem = [pr, pg, pb, 0, 0, 0, i]
-        rgbToYCbCr(item)
-        let [_r, _g, _b, pY, pCb, pCr] = item
-        let dY = Y - pY
-        let dCb = Cb - pCb
-        let dCr = Cr - pCr
+        let pColor: ColorArray = [pr, pg, pb, 0, 0, 0]
+        rgbToYCbCr(pColor)
+        let item: PaletteTableItem = [pColor, i]
+        let dY = color[Y] - pColor[Y]
+        let dCb = color[Cb] - pColor[Cb]
+        let dCr = color[Cr] - pColor[Cr]
         let d2 = dY * dY + dCb * dCb + dCr * dCr
         return [d2, item]
       })
@@ -74,11 +66,11 @@ export function applyPalette(
     let g = image[i + 1]
     let r = image[i + 2]
 
-    ;[r, g, b] = getPalette(r, g, b, palette, paletteTable)
+    let color = getPalette(r, g, b, palette, paletteTable)[0]
 
-    image[i + 0] = b
-    image[i + 1] = g
-    image[i + 2] = r
+    image[i + 0] = color[B]
+    image[i + 1] = color[G]
+    image[i + 2] = color[R]
   }
 }
 
