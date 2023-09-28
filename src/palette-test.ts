@@ -9,11 +9,14 @@ import {
   initEvenPalette,
   Palette,
 } from './palette'
+import { h, offset, w } from './config'
 import { saveCapture } from './dev-utils'
+
+let [dx, dy] = offset
 
 function sample() {
   console.time('capture')
-  let capture = robot.screen.capture()
+  let capture = robot.screen.capture(dx, dy, w, h)
   console.timeEnd('capture')
 
   saveCapture(capture, 'original.jpg')
