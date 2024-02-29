@@ -1,23 +1,11 @@
 import dgram from 'dgram'
-import os from 'os'
 import { getFPS, startFPS } from './fps'
 import { clientPort, serverPort } from './config'
 import { capture, message } from './capture-v2'
 import { env } from './env'
+import { broadcastAddress } from './network'
 
 let socket = dgram.createSocket('udp4')
-
-let address = Object.values(os.networkInterfaces())
-  .flatMap(s => s)
-  .find(s => s?.address.startsWith('192.'))!
-
-console.log(address)
-
-// let broadcastAddress = '192.168.80.255'
-// let broadcastAddress = '192.168.1.255'
-let broadcastAddress = address.address.split('.').slice(0, 3).join('.') + '.255'
-
-console.log({ broadcastAddress })
 
 let frame = 0
 
