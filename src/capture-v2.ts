@@ -5,7 +5,7 @@ import { h, max_size, offset, paletteSize, w } from './config'
 
 let [dx, dy] = offset
 
-let paletteSampleStep = 4 * ((w * h) / paletteSize / 100)
+let paletteSampleStep = Math.round(4 * ((w * h) / paletteSize / 100))
 
 let palette = createEmptyPalette(paletteSize)
 initEvenPalette(palette)
