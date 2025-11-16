@@ -1,0 +1,13 @@
+robotjs not longer working
+6 years ago
+
+to try
+
+https://www.npmjs.com/package/screenshot-desktop
+2 months ago
+support both windowns mac linux
+
+https://www.npmjs.com/package/node-screenshots
+1 year ago
+support both windowns mac linux
+but up to node20?
