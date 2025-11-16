@@ -4,3 +4,4 @@ live-cast-client/src/bundle.js
 screenshots
 tsconfig.tsbuildinfo
 .env
+res/*.jpg
