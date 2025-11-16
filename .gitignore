@@ -1,7 +1,1 @@
-node_modules
-pnpm-lock.yaml
-live-cast-client/src/bundle.js
-screenshots
-tsconfig.tsbuildinfo
-.env
-res/*.jpg
+test/images/
