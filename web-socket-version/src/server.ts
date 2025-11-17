@@ -57,7 +57,9 @@ wss.on('connection', socket => {
         break
       case screenMessage:
         for (let socket of subscribers.keys()) {
-          socket.send(data)
+          if (socket.bufferedAmount == 0) {
+            socket.send(data)
+          }
         }
         break
       case receivedMessage:
