@@ -12,7 +12,7 @@
     "dist"
   ],
   "scripts": {
-    "start": "ts-node-dev src/server.ts",
+    "start": "npm run build && ts-node-dev src/server.ts",
     "test": "tsc --noEmit",
     "clean": "rimraf dist",
     "build": "esbuild --bundle src/app.ts --outfile=public/bundle.js",
