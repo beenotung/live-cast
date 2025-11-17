@@ -12,6 +12,7 @@
     "dist"
   ],
   "scripts": {
+    "prod": "tsc && npm run build && node dist/server.js",
     "start": "npm run build && ts-node-dev src/server.ts",
     "test": "tsc --noEmit",
     "clean": "rimraf dist",
