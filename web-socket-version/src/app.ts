@@ -18,7 +18,6 @@ import {
 let statusNode = querySelector('#status')
 let shareButton = querySelector('#shareButton')
 let subscribeButton = querySelector('#subscribeButton')
-let snapshotButton = querySelector('#snapshotButton')
 let receiverFPSText = querySelector('#receiverFPS')
 
 let remoteVideo = document.createElement('video')
@@ -190,6 +189,7 @@ shareButton.onclick = async () => {
       }
     }
     container.appendChild(stopButton)
+
     container.appendChild(document.createElement('br'))
 
     let video = document.createElement('video')
@@ -258,18 +258,54 @@ subscribeButton.onclick = async () => {
 
   receiverFPSCounter.reset()
 
+  let container = document.createElement('div')
+
+  let buttons = document.createElement('div')
+  buttons.classList.add('buttons')
+  container.appendChild(buttons)
+
   let stopButton = document.createElement('button')
   stopButton.textContent = 'Stop Subscribing'
   stopButton.onclick = () => {
     remoteVideo.srcObject = null
-    remoteVideo.remove()
-    stopButton.remove()
+    container.remove()
     send(new Uint8Array([unsubscribeMessage]))
     statusNode.textContent = 'Stopped subscribing to remote screen'
   }
-  document.body.appendChild(stopButton)
+  buttons.appendChild(stopButton)
 
-  document.body.appendChild(remoteVideo)
+  let fullScreenButton = document.createElement('button')
+  fullScreenButton.textContent = 'Fullscreen'
+  fullScreenButton.onclick = () => {
+    remoteVideo.requestFullscreen()
+  }
+  buttons.appendChild(fullScreenButton)
+
+  let snapshotButton = document.createElement('button')
+  snapshotButton.textContent = 'Snapshot'
+  snapshotButton.onclick = async () => {
+    let timestamp = getTimestamp().replaceAll(' ', '_').replaceAll(':', '-')
+    let filename = `snapshot_${timestamp}.jpg`
+
+    let blob = await new Promise<Blob | null>(resolve => {
+      remoteCanvas.toBlob(resolve, 'image/jpeg', 0.8)
+    })
+    if (!blob) return
+
+    let url = URL.createObjectURL(blob)
+    let link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+  buttons.appendChild(snapshotButton)
+
+  container.appendChild(remoteVideo)
+
+  document.body.appendChild(container)
 
   remoteVideo.muted = true
   remoteVideo.playsInline = true
@@ -277,27 +313,6 @@ subscribeButton.onclick = async () => {
   remoteVideo.play()
 
   send(new Uint8Array([subscribeMessage]), 'wait')
-}
-
-snapshotButton.onclick = async () => {
-  let timestamp = getTimestamp().replaceAll(' ', '_').replaceAll(':', '-')
-  let filename = `snapshot_${timestamp}.jpg`
-  remoteCanvas.toBlob(
-    async blob => {
-      if (!blob) return
-
-      let url = URL.createObjectURL(blob)
-      let link = document.createElement('a')
-      link.href = url
-      link.download = filename
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-    },
-    'image/jpeg',
-    0.8,
-  )
 }
 
 function getTimestamp() {

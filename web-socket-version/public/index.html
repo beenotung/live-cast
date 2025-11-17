@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Live Cast</title>
     <style>
+      .buttons {
+        display: flex;
+        gap: 0.25rem;
+        margin: 0.25rem 0;
+      }
       .screen-share-container {
       }
       canvas,
@@ -16,10 +21,9 @@
   <body>
     <h1>Live Cast</h1>
     <p id="status">Loading...</p>
-    <div id="menu">
+    <div class="buttons">
       <button id="shareButton">Share My Screen</button>
       <button id="subscribeButton">Subscribe Remote Screen</button>
-      <button id="snapshotButton">Snapshot</button>
     </div>
     <div>Receiver FPS: <span id="receiverFPS">-</span></div>
   </body>
