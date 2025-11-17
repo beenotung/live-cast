@@ -37,6 +37,8 @@ let receiverFPSList: number[] = []
 
 let targetFPS = 30
 
+let limitFPS = false
+
 function adjustSenderFPS() {
   let fpsList = Object.values(receiverFPSList)
   let medianFPS = median(fpsList)
@@ -57,7 +59,9 @@ function adjustSenderFPS() {
   message += ` | max: ${max(fpsList)!.toFixed(1)}`
   message += ` | median: ${medianFPS.toFixed(1)}`
   message += ` | ratio: ${ratio.toFixed(2)}`
-  message += ` | target: ${targetFPS.toFixed(1)}`
+  if (limitFPS) {
+    message += ` | target: ${targetFPS.toFixed(1)}`
+  }
   receiverFPSText.textContent = message
 }
 
@@ -189,7 +193,7 @@ shareButton.onclick = async () => {
 
       let currentTime = performance.now()
       let timeSinceLastFrame = currentTime - lastFrameTime
-      if (timeSinceLastFrame < 1000 / targetFPS) {
+      if (timeSinceLastFrame < 1000 / targetFPS && limitFPS) {
         requestAnimationFrame(shareScreen)
         return
       }
