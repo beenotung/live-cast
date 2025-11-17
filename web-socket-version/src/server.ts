@@ -34,7 +34,8 @@ const server = http.createServer(app)
 const wss = new WebSocketServer({ server, path: '/ws' })
 
 let sharer: WebSocket | null = null
-let subscribers = new Map<WebSocket, number>()
+let subscribers = new Set<WebSocket>()
+let sockets = new Map<WebSocket, number>()
 
 let lastReceiverId = 0
 
@@ -53,12 +54,13 @@ wss.on('connection', socket => {
         sharer = null
         break
       case subscribeMessage: {
-        let id = subscribers.get(socket)
+        let id = sockets.get(socket)
         if (!id) {
           lastReceiverId++
           id = lastReceiverId
-          subscribers.set(socket, id)
+          sockets.set(socket, id)
         }
+        subscribers.add(socket)
         socket.send(makeIdMessage(id))
         break
       }
