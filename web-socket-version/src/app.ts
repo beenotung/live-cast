@@ -9,6 +9,7 @@ import {
 let statusNode = querySelector('#status')
 let shareButton = querySelector('#shareButton')
 let subscribeButton = querySelector('#subscribeButton')
+let snapshotButton = querySelector('#snapshotButton')
 
 let remoteVideo = document.createElement('video')
 let remoteCanvas = document.createElement('canvas')
@@ -141,6 +142,39 @@ subscribeButton.onclick = async () => {
   remoteVideo.play()
 
   send(new Uint8Array([subscribeMessage]), 'wait')
+}
+
+snapshotButton.onclick = async () => {
+  let timestamp = getTimestamp().replaceAll(' ', '_').replaceAll(':', '-')
+  let filename = `snapshot_${timestamp}.jpg`
+  remoteCanvas.toBlob(
+    async blob => {
+      if (!blob) return
+
+      let url = URL.createObjectURL(blob)
+      let link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    },
+    'image/jpeg',
+    0.8,
+  )
+}
+
+function getTimestamp() {
+  let date = new Date()
+  let y = date.getFullYear()
+  let m = date.getMonth() + 1
+  let d = date.getDate()
+  let H = date.getHours()
+  let M = date.getMinutes()
+  let S = date.getSeconds()
+  let ms = date.getMilliseconds()
+  return `${y}-${m}-${d} ${H}:${M}:${S}.${ms}`
 }
 
 function querySelector<E extends HTMLElement>(selector: string) {
