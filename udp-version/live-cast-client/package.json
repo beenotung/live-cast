@@ -15,7 +15,7 @@
     "name": "Beeno Tung",
     "email": "aabbcc1241@yahoo.com.hk"
   },
-  "license": "MIT",
+  "license": "BSD-2-Clause",
   "dependencies": {
     "electron-squirrel-startup": "^1.0.0"
   },

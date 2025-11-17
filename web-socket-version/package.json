@@ -5,7 +5,7 @@
   "description": "This version is used when UDP is not available.",
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "BSD-2-Clause",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
