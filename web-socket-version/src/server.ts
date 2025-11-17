@@ -2,7 +2,7 @@ import http from 'http'
 import express from 'express'
 import { Server as WebSocketServer, WebSocket } from 'ws'
 import { print } from 'listening-on'
-import { shareMessage, subscribeMessage } from './message'
+import { screenMessage, shareMessage, subscribeMessage } from './message'
 
 const app = express()
 
@@ -25,13 +25,17 @@ wss.on('connection', socket => {
       socket.close()
       return
     }
-    console.log('received message:', data)
     switch (data[0]) {
-      case shareMessage[0]:
+      case shareMessage:
         sharer = socket
         break
-      case subscribeMessage[0]:
+      case subscribeMessage:
         subscribers.add(socket)
+        break
+      case screenMessage:
+        subscribers.forEach(subscriber => {
+          subscriber.send(data)
+        })
         break
       default:
         console.log('received unknown message, closing connection')

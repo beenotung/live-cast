@@ -1,24 +1,41 @@
-import { shareMessage, subscribeMessage } from './message'
+import {
+  makeScreenMessage,
+  parseScreenMessage,
+  screenMessage,
+  shareMessage,
+  subscribeMessage,
+} from './message'
 
 let statusNode = querySelector('#status')
 let shareButton = querySelector('#shareButton')
 let subscribeButton = querySelector('#subscribeButton')
 
+let remoteVideo = document.createElement('video')
+let remoteCanvas = document.createElement('canvas')
+let remoteContext = remoteCanvas.getContext('2d')!
+
 let wsOrigin = location.origin.replace('http', 'ws')
 let wsUrl = wsOrigin + '/ws'
 let socket = connect()
-
-let shareTimer = requestAnimationFrame(() => {
-  /* placeholder for type hint */
-})
 
 function connect() {
   let socket = new WebSocket(wsUrl)
   socket.onopen = () => {
     statusNode.textContent = 'Connected to server'
   }
-  socket.onmessage = event => {
-    console.log('received message:', event.data)
+  socket.onmessage = async event => {
+    let blob = event.data as Blob
+    let message = await blob.bytes()
+    switch (message[0]) {
+      case screenMessage:
+        let imageData = parseScreenMessage(message)
+        remoteCanvas.width = imageData.width
+        remoteCanvas.height = imageData.height
+        remoteContext.putImageData(imageData, 0, 0)
+        break
+      default:
+        console.error('received unknown message:', message)
+    }
   }
   socket.onclose = () => {
     statusNode.textContent = 'Connection lost, reconnecting...'
@@ -32,6 +49,16 @@ connect()
 
 function reconnect() {
   socket = connect()
+}
+
+function send(message: Uint8Array, flag?: 'wait') {
+  if (socket.readyState === WebSocket.OPEN) {
+    socket.send(message)
+    return
+  }
+  if (flag === 'wait') {
+    setTimeout(send, 100, message, flag)
+  }
 }
 
 shareButton.onclick = async () => {
@@ -59,6 +86,7 @@ shareButton.onclick = async () => {
       })
       video.srcObject = null
       container.remove()
+      cancelAnimationFrame(timer)
     }
     container.appendChild(stopButton)
     container.appendChild(document.createElement('br'))
@@ -75,7 +103,8 @@ shareButton.onclick = async () => {
       video.play()
     })
 
-    socket.send(shareMessage)
+    let canvas = document.createElement('canvas')
+    let context = canvas.getContext('2d')!
 
     function shareScreen() {
       let newSettings = stream.getVideoTracks()[0].getSettings()
@@ -86,9 +115,15 @@ shareButton.onclick = async () => {
         settings = newSettings
         sizeText.textContent = `${settings.width}x${settings.height}`
       }
-      requestAnimationFrame(shareScreen)
+
+      send(makeScreenMessage(canvas, context, video))
+
+      timer = requestAnimationFrame(shareScreen)
     }
-    requestAnimationFrame(shareScreen)
+
+    send(new Uint8Array([shareMessage]), 'wait')
+
+    let timer = requestAnimationFrame(shareScreen)
   } catch (error) {
     console.error('failed to share screen')
     statusNode.textContent = 'failed to share screen'
@@ -97,7 +132,15 @@ shareButton.onclick = async () => {
 
 subscribeButton.onclick = async () => {
   statusNode.textContent = 'Subscribing to remote screen...'
-  socket.send(subscribeMessage)
+
+  document.body.appendChild(remoteVideo)
+
+  remoteVideo.muted = true
+  remoteVideo.playsInline = true
+  remoteVideo.srcObject = remoteCanvas.captureStream()
+  remoteVideo.play()
+
+  send(new Uint8Array([subscribeMessage]), 'wait')
 }
 
 function querySelector<E extends HTMLElement>(selector: string) {
