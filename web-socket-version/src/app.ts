@@ -14,11 +14,15 @@ import {
   subscribeMessage,
   unsubscribeMessage,
 } from './message'
+import { Position } from './env'
 
 let statusNode = querySelector('#status')
 let shareButton = querySelector('#shareButton')
 let subscribeButton = querySelector('#subscribeButton')
 let receiverFPSText = querySelector('#receiverFPS')
+
+let watermarkImage = new Image()
+let watermarkPosition: Position | null = null
 
 let remoteVideo = document.createElement('video')
 let remoteCanvas = document.createElement('canvas')
@@ -231,7 +235,8 @@ shareButton.onclick = async () => {
         sizeText.textContent = `${settings.width}x${settings.height}`
       }
 
-      let message = await makeScreenMessage(canvas, context, video, quality)
+      drawScreen(canvas, context, video)
+      let message = await makeScreenMessage(canvas, quality)
       send(message)
       messageSizeText.textContent = message.length.toLocaleString()
 
@@ -314,6 +319,79 @@ subscribeButton.onclick = async () => {
 
   send(new Uint8Array([subscribeMessage]), 'wait')
 }
+
+function drawScreen(
+  canvas: HTMLCanvasElement,
+  context: CanvasRenderingContext2D,
+  video: HTMLVideoElement,
+) {
+  canvas.width = video.videoWidth
+  canvas.height = video.videoHeight
+  context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight)
+  let watermarkPosition = getWatermarkPosition(canvas)
+  if (watermarkPosition) {
+    context.drawImage(
+      watermarkImage,
+      watermarkPosition.x,
+      watermarkPosition.y,
+      watermarkImage.naturalWidth,
+      watermarkImage.naturalHeight,
+    )
+  }
+}
+
+function getWatermarkPosition(canvas: HTMLCanvasElement) {
+  if (!watermarkPosition) {
+    return null
+  }
+  let image = {
+    width: watermarkImage.naturalWidth,
+    height: watermarkImage.naturalHeight,
+  }
+  switch (watermarkPosition) {
+    case 'top-left':
+      return {
+        x: 0,
+        y: 0,
+      }
+    case 'top-right':
+      return {
+        x: canvas.width - image.width,
+        y: 0,
+      }
+    case 'bottom-left':
+      return {
+        x: 0,
+        y: canvas.height - image.height,
+      }
+    case 'bottom-right':
+      return {
+        x: canvas.width - image.width,
+        y: canvas.height - image.height,
+      }
+    case 'center':
+      return {
+        x: (canvas.width - image.width) / 2,
+        y: (canvas.height - image.height) / 2,
+      }
+    default:
+      throw new Error(`unknown watermark position: ${watermarkPosition}`)
+  }
+}
+
+async function loadWatermark() {
+  let res = await fetch('/watermark/position')
+  if (res.status == 404) {
+    return
+  }
+  let position = await res.text()
+  await new Promise(resolve => {
+    watermarkImage.onload = resolve
+    watermarkImage.src = '/watermark/image'
+  })
+  watermarkPosition = position as Position
+}
+loadWatermark()
 
 function getTimestamp() {
   let date = new Date()

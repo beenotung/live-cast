@@ -1,3 +1,5 @@
+import { Position } from './env'
+
 export let shareMessage = 1
 export let subscribeMessage = 2
 export let screenMessage = 3
@@ -8,13 +10,8 @@ export let receivedMessage = 7
 
 export async function makeScreenMessage(
   canvas: HTMLCanvasElement,
-  context: CanvasRenderingContext2D,
-  video: HTMLVideoElement,
   quality: number,
 ) {
-  canvas.width = video.videoWidth
-  canvas.height = video.videoHeight
-  context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight)
   let blob = await new Promise<Blob | null>(resolve => {
     canvas.toBlob(
       blob => {

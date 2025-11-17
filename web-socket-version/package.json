@@ -22,8 +22,10 @@
   },
   "dependencies": {
     "@beenotung/tslib": "^24.14.0",
+    "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "listening-on": "^2.1.0",
+    "populate-env": "^2.4.3",
     "ws": "^8.18.0"
   },
   "devDependencies": {

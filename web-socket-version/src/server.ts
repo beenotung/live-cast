@@ -11,14 +11,24 @@ import {
   unsubscribeMessage,
   makeIdMessage,
 } from './message'
+import { env } from './env'
+import { resolve } from 'path'
 
 const app = express()
+
+if (env.WATERMARK_FILE !== 'skip') {
+  app.get('/watermark/image', (req, res) => {
+    res.sendFile(resolve(env.WATERMARK_FILE))
+  })
+  app.get('/watermark/position', (req, res) => {
+    res.send(env.WATERMARK_POSITION)
+  })
+}
 
 app.use(express.static('public'))
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 
-const port = 8100
 const server = http.createServer(app)
 
 const wss = new WebSocketServer({ server, path: '/ws' })
@@ -72,6 +82,7 @@ wss.on('connection', socket => {
   })
 })
 
+let port = env.PORT
 server.listen(port, () => {
   print(port)
 })
