@@ -1,7 +1,8 @@
 import http from 'http'
 import express from 'express'
-import { Server as WebSocketServer } from 'ws'
+import { Server as WebSocketServer, WebSocket } from 'ws'
 import { print } from 'listening-on'
+import { shareMessage, subscribeMessage } from './message'
 
 const app = express()
 
@@ -14,14 +15,28 @@ const server = http.createServer(app)
 
 const wss = new WebSocketServer({ server, path: '/ws' })
 
+let sharer: WebSocket | null = null
+let subscribers = new Set<WebSocket>()
+
 wss.on('connection', socket => {
   socket.on('message', data => {
+    if (!(data instanceof Buffer)) {
+      console.log('received invalid data, closing connection')
+      socket.close()
+      return
+    }
     console.log('received message:', data)
-    // for (const client of wss.clients) {
-    //   if (client.readyState === client.OPEN) {
-    //     client.send(String(data))
-    //   }
-    // }
+    switch (data[0]) {
+      case shareMessage[0]:
+        sharer = socket
+        break
+      case subscribeMessage[0]:
+        subscribers.add(socket)
+        break
+      default:
+        console.log('received unknown message, closing connection')
+        socket.close()
+    }
   })
 })
 
