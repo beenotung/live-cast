@@ -1,5 +1,5 @@
 export function createFPSCounter() {
-  let startTime = Date.now()
+  let startTime = performance.now()
   let count = 0
 
   function tick(): void {
@@ -9,12 +9,12 @@ export function createFPSCounter() {
   return {
     tick,
     getFPS: () => {
-      let now = Date.now()
+      let now = performance.now()
       let timePassed = (now - startTime) / 1000
       return count / timePassed
     },
     reset: () => {
-      startTime = Date.now()
+      startTime = performance.now()
       count = 0
     },
   }

@@ -157,7 +157,7 @@ shareButton.onclick = async () => {
       })
       video.srcObject = null
       container.remove()
-      clearTimeout(timer)
+      cancelAnimationFrame(timer)
       if (!document.querySelector('.screen-share-container')) {
         send(new Uint8Array([stopSharingMessage]))
       }
@@ -180,7 +180,16 @@ shareButton.onclick = async () => {
     let canvas = document.createElement('canvas')
     let context = canvas.getContext('2d')!
 
+    let lastFrameTime = 0
     function shareScreen() {
+      let currentTime = performance.now()
+      let timeSinceLastFrame = currentTime - lastFrameTime
+      if (timeSinceLastFrame < 1000 / targetFPS) {
+        requestAnimationFrame(shareScreen)
+        return
+      }
+      lastFrameTime = currentTime
+
       let newSettings = stream.getVideoTracks()[0].getSettings()
       if (
         newSettings.width !== settings.width ||
@@ -195,8 +204,7 @@ shareButton.onclick = async () => {
       senderFPSCounter.tick()
       senderFPSText.textContent = senderFPSCounter.getFPS().toFixed(1)
 
-      let interval = 1000 / targetFPS
-      timer = setTimeout(shareScreen, interval)
+      timer = requestAnimationFrame(shareScreen)
     }
 
     send(new Uint8Array([shareMessage]), 'wait')
@@ -204,7 +212,7 @@ shareButton.onclick = async () => {
     senderFPSCounter.reset()
     senderFPSText.textContent = '-'
 
-    let timer = setTimeout(shareScreen)
+    let timer = requestAnimationFrame(shareScreen)
   } catch (error) {
     console.error('failed to share screen')
     statusNode.textContent = 'failed to share screen'
