@@ -3,6 +3,7 @@ import {
   parseScreenMessage,
   screenMessage,
   shareMessage,
+  stopSharingMessage,
   subscribeMessage,
   unsubscribeMessage,
 } from './message'
@@ -92,6 +93,9 @@ shareButton.onclick = async () => {
       video.srcObject = null
       container.remove()
       cancelAnimationFrame(timer)
+      if (!document.querySelector('.screen-share-container')) {
+        send(new Uint8Array([stopSharingMessage]))
+      }
     }
     container.appendChild(stopButton)
     container.appendChild(document.createElement('br'))

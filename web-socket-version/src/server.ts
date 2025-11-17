@@ -5,6 +5,7 @@ import { print } from 'listening-on'
 import {
   screenMessage,
   shareMessage,
+  stopSharingMessage,
   subscribeMessage,
   unsubscribeMessage,
 } from './message'
@@ -33,6 +34,9 @@ wss.on('connection', socket => {
     switch (data[0]) {
       case shareMessage:
         sharer = socket
+        break
+      case stopSharingMessage:
+        sharer = null
         break
       case subscribeMessage:
         subscribers.add(socket)

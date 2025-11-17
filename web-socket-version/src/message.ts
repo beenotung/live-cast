@@ -2,6 +2,7 @@ export let shareMessage = 1
 export let subscribeMessage = 2
 export let screenMessage = 3
 export let unsubscribeMessage = 4
+export let stopSharingMessage = 5
 
 export function makeScreenMessage(
   canvas: HTMLCanvasElement,
