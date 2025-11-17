@@ -14,6 +14,7 @@ export let env = {
   PORT: 8100,
   WATERMARK_FILE: 'skip',
   WATERMARK_POSITION: 'top-right' as Position,
+  LIMIT_FPS: false,
 }
 
 populateEnv(env, { mode: 'halt' })

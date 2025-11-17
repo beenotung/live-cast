@@ -24,6 +24,11 @@ if (env.WATERMARK_FILE !== 'skip') {
     res.send(env.WATERMARK_POSITION)
   })
 }
+app.get('/settings', (req, res) => {
+  res.json({
+    limitFPS: env.LIMIT_FPS,
+  })
+})
 
 app.use(express.static('public'))
 app.use(express.json())

@@ -379,8 +379,12 @@ function getWatermarkPosition(canvas: HTMLCanvasElement) {
   }
 }
 
-async function loadWatermark() {
-  let res = await fetch('/watermark/position')
+async function loadSettings() {
+  let res = await fetch('/settings')
+  let json = await res.json()
+  limitFPS = json.limitFPS
+
+  res = await fetch('/watermark/position')
   if (res.status == 404) {
     return
   }
@@ -391,7 +395,7 @@ async function loadWatermark() {
   })
   watermarkPosition = position as Position
 }
-loadWatermark()
+loadSettings()
 
 function getTimestamp() {
   let date = new Date()
