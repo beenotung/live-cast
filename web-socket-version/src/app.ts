@@ -1,7 +1,13 @@
+import { max, median, min } from '@beenotung/tslib/array'
 import { createFPSCounter } from './fps'
 import {
+  idMessage,
+  makeReceivedMessage,
   makeScreenMessage,
+  parseIdMessage,
+  parseReceivedMessage,
   parseScreenMessage,
+  receivedMessage,
   screenMessage,
   shareMessage,
   stopSharingMessage,
@@ -13,6 +19,7 @@ let statusNode = querySelector('#status')
 let shareButton = querySelector('#shareButton')
 let subscribeButton = querySelector('#subscribeButton')
 let snapshotButton = querySelector('#snapshotButton')
+let receiverFPSText = querySelector('#receiverFPS')
 
 let remoteVideo = document.createElement('video')
 let remoteCanvas = document.createElement('canvas')
@@ -24,7 +31,35 @@ let socket = connect()
 
 let senderFPSCounter = createFPSCounter()
 let receiverFPSCounter = createFPSCounter()
-let receiverFPSText: Text | null = null
+let receiverId = 0
+
+let receiverFPSList: number[] = []
+
+let targetFPS = 30
+
+function adjustSenderFPS() {
+  let fpsList = Object.values(receiverFPSList)
+  let medianFPS = median(fpsList)
+  if (!medianFPS) {
+    return
+  }
+  let senderFPS = senderFPSCounter.getFPS()
+  let ratio = medianFPS / senderFPS
+  if (ratio < 0.9) {
+    // receiver getting < 90% of sent frames, reduce sender FPS significantly
+    targetFPS = senderFPS * 0.9
+  } else if (ratio >= 0.95) {
+    // receiver getting > 95% of sent frames, increase sender FPS slightly
+    targetFPS = senderFPS + 2
+  }
+  let message = `count: ${fpsList.length}`
+  message += ` | min: ${min(fpsList)!.toFixed(1)}`
+  message += ` | max: ${max(fpsList)!.toFixed(1)}`
+  message += ` | median: ${medianFPS.toFixed(1)}`
+  message += ` | ratio: ${ratio.toFixed(2)}`
+  message += ` | target: ${targetFPS.toFixed(1)}`
+  receiverFPSText.textContent = message
+}
 
 function connect() {
   let socket = new WebSocket(wsUrl)
@@ -39,14 +74,27 @@ function connect() {
     let message = await blob.bytes()
     switch (message[0]) {
       case screenMessage:
-        if (receiverFPSText) {
+        if (receiverId) {
           receiverFPSCounter.tick()
-          receiverFPSText.textContent = receiverFPSCounter.getFPS().toFixed(1)
+          let fps = receiverFPSCounter.getFPS()
+          receiverFPSText.textContent = fps.toFixed(1)
+          if (receivedMessage) {
+            send(makeReceivedMessage(receiverId, fps))
+          }
         }
         let imageData = parseScreenMessage(message)
         remoteCanvas.width = imageData.width
         remoteCanvas.height = imageData.height
         remoteContext.putImageData(imageData, 0, 0)
+        break
+      case idMessage:
+        receiverId = parseIdMessage(message)
+        break
+      case receivedMessage:
+        receiverFPSCounter.tick()
+        let { id, fps } = parseReceivedMessage(message)
+        receiverFPSList[id] = fps
+        adjustSenderFPS()
         break
       default:
         console.error('received unknown message:', message)
@@ -109,7 +157,7 @@ shareButton.onclick = async () => {
       })
       video.srcObject = null
       container.remove()
-      cancelAnimationFrame(timer)
+      clearTimeout(timer)
       if (!document.querySelector('.screen-share-container')) {
         send(new Uint8Array([stopSharingMessage]))
       }
@@ -147,7 +195,8 @@ shareButton.onclick = async () => {
       senderFPSCounter.tick()
       senderFPSText.textContent = senderFPSCounter.getFPS().toFixed(1)
 
-      timer = requestAnimationFrame(shareScreen)
+      let interval = 1000 / targetFPS
+      timer = setTimeout(shareScreen, interval)
     }
 
     send(new Uint8Array([shareMessage]), 'wait')
@@ -155,7 +204,7 @@ shareButton.onclick = async () => {
     senderFPSCounter.reset()
     senderFPSText.textContent = '-'
 
-    let timer = requestAnimationFrame(shareScreen)
+    let timer = setTimeout(shareScreen)
   } catch (error) {
     console.error('failed to share screen')
     statusNode.textContent = 'failed to share screen'
@@ -167,17 +216,11 @@ subscribeButton.onclick = async () => {
 
   receiverFPSCounter.reset()
 
-  let receiverFPSContainer = document.createElement('div')
-  addText(receiverFPSContainer, 'Receiver FPS: ')
-  receiverFPSText = addText(receiverFPSContainer, '-')
-  document.body.appendChild(receiverFPSContainer)
-
   let stopButton = document.createElement('button')
   stopButton.textContent = 'Stop Subscribing'
   stopButton.onclick = () => {
     remoteVideo.srcObject = null
     remoteVideo.remove()
-    receiverFPSContainer.remove()
     stopButton.remove()
     send(new Uint8Array([unsubscribeMessage]))
   }

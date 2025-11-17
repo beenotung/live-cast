@@ -3,6 +3,8 @@ export let subscribeMessage = 2
 export let screenMessage = 3
 export let unsubscribeMessage = 4
 export let stopSharingMessage = 5
+export let idMessage = 6
+export let receivedMessage = 7
 
 export function makeScreenMessage(
   canvas: HTMLCanvasElement,
@@ -46,4 +48,39 @@ export function parseScreenMessage(message: Uint8Array) {
     width,
   )
   return imageData
+}
+
+export function makeIdMessage(id: number) {
+  let message = new Uint8Array(2)
+  message[0] = idMessage
+  message[1] = id
+  return message
+}
+
+export function parseIdMessage(message: Uint8Array) {
+  return message[1]
+}
+
+export function makeReceivedMessage(id: number, fps: number) {
+  fps = Math.round(fps * 1000) // keep 3 decimal places
+  let fpsLow = fps & 255
+  let fpsHigh = (fps >> 8) & 255
+
+  let message = new Uint8Array(4)
+  message[0] = receivedMessage
+  message[1] = id
+  message[2] = fpsLow
+  message[3] = fpsHigh
+  return message
+}
+
+export function parseReceivedMessage(message: Uint8Array) {
+  let id = message[1]
+
+  let fpsLow = message[2]
+  let fpsHigh = message[3]
+  let fps = (fpsHigh << 8) | fpsLow
+  fps /= 1000 // restore 3 decimal places
+
+  return { id, fps }
 }
