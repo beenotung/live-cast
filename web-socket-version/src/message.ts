@@ -6,22 +6,30 @@ export let stopSharingMessage = 5
 export let idMessage = 6
 export let receivedMessage = 7
 
-export function makeScreenMessage(
+export async function makeScreenMessage(
   canvas: HTMLCanvasElement,
   context: CanvasRenderingContext2D,
   video: HTMLVideoElement,
+  quality: number,
 ) {
   canvas.width = video.videoWidth
   canvas.height = video.videoHeight
   context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight)
-  let imageData = context.getImageData(
-    0,
-    0,
-    video.videoWidth,
-    video.videoHeight,
-  )
+  let blob = await new Promise<Blob | null>(resolve => {
+    canvas.toBlob(
+      blob => {
+        resolve(blob)
+      },
+      'image/jpeg',
+      quality,
+    )
+  })
+  if (!blob) {
+    throw new Error('failed to convert canvas to blob')
+  }
+  let imageData = await blob.bytes()
 
-  let message = new Uint8Array(3 + imageData.data.length)
+  let message = new Uint8Array(3 + imageData.length)
 
   // message type
   message[0] = screenMessage
@@ -34,20 +42,25 @@ export function makeScreenMessage(
   message[2] = widthHigh
 
   // image data payload
-  message.set(imageData.data, 3)
+  message.set(imageData, 3)
 
   return message
 }
 
-export function parseScreenMessage(message: Uint8Array) {
+export async function parseScreenMessage(message: Uint8Array) {
   let widthLow = message[1]
   let widthHigh = message[2]
   let width = (widthHigh << 8) | widthLow
-  let imageData = new ImageData(
-    new Uint8ClampedArray(message.subarray(3)),
-    width,
-  )
-  return imageData
+  let jpegBytes = new Uint8Array(message.subarray(3))
+  let blob = new Blob([jpegBytes], { type: 'image/jpeg' })
+  let image = document.createElement('img')
+  let url = URL.createObjectURL(blob)
+  await new Promise<void>(resolve => {
+    image.onload = () => resolve()
+    image.src = url
+  })
+  URL.revokeObjectURL(url)
+  return image
 }
 
 export function makeIdMessage(id: number) {

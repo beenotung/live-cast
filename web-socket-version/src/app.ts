@@ -86,10 +86,10 @@ function connect() {
             send(makeReceivedMessage(receiverId, fps))
           }
         }
-        let imageData = parseScreenMessage(message)
-        remoteCanvas.width = imageData.width
-        remoteCanvas.height = imageData.height
-        remoteContext.putImageData(imageData, 0, 0)
+        let image = await parseScreenMessage(message)
+        remoteCanvas.width = image.width
+        remoteCanvas.height = image.height
+        remoteContext.drawImage(image, 0, 0)
         break
       case idMessage:
         receiverId = parseIdMessage(message)
@@ -157,6 +157,22 @@ shareButton.onclick = async () => {
     addText(messageSizeContainer, ' bytes')
     container.appendChild(messageSizeContainer)
 
+    let quality = +localStorage.getItem('quality')! || 0.8
+    let qualityContainer = document.createElement('div')
+    qualityContainer.style.display = 'flex'
+    qualityContainer.style.alignItems = 'center'
+    addText(qualityContainer, 'Quality: ')
+    let qualityText = addText(qualityContainer, quality.toFixed(2) + ' ')
+    let qualityInput = createRangeInput()
+    qualityContainer.appendChild(qualityInput)
+    qualityInput.value = quality.toString()
+    qualityInput.oninput = event => {
+      quality = qualityInput.valueAsNumber
+      qualityText.textContent = quality.toFixed(2) + ' '
+      localStorage.setItem('quality', quality.toString())
+    }
+    container.appendChild(qualityContainer)
+
     let stopButton = document.createElement('button')
     addText(stopButton, 'Stop Sharing Screen (')
     let sizeText = addText(stopButton, `${settings.width}x${settings.height}`)
@@ -191,7 +207,7 @@ shareButton.onclick = async () => {
     let context = canvas.getContext('2d')!
 
     let lastFrameTime = 0
-    function shareScreen() {
+    async function shareScreen() {
       if (socket.bufferedAmount > 0) {
         requestAnimationFrame(shareScreen)
         return
@@ -214,7 +230,7 @@ shareButton.onclick = async () => {
         sizeText.textContent = `${settings.width}x${settings.height}`
       }
 
-      let message = makeScreenMessage(canvas, context, video)
+      let message = await makeScreenMessage(canvas, context, video, quality)
       send(message)
       messageSizeText.textContent = message.length.toLocaleString()
 
@@ -306,4 +322,13 @@ function addText(container: HTMLElement, text: string) {
   let node = document.createTextNode(text)
   container.appendChild(node)
   return node
+}
+
+function createRangeInput() {
+  let input = document.createElement('input')
+  input.type = 'range'
+  input.min = '0.05'
+  input.max = '1'
+  input.step = '0.05'
+  return input
 }
