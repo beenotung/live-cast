@@ -4,6 +4,7 @@ import {
   screenMessage,
   shareMessage,
   subscribeMessage,
+  unsubscribeMessage,
 } from './message'
 
 let statusNode = querySelector('#status')
@@ -23,6 +24,9 @@ function connect() {
   let socket = new WebSocket(wsUrl)
   socket.onopen = () => {
     statusNode.textContent = 'Connected to server'
+    if (remoteVideo.srcObject) {
+      send(new Uint8Array([subscribeMessage]), 'wait')
+    }
   }
   socket.onmessage = async event => {
     let blob = event.data as Blob
@@ -133,6 +137,16 @@ shareButton.onclick = async () => {
 
 subscribeButton.onclick = async () => {
   statusNode.textContent = 'Subscribing to remote screen...'
+
+  let stopButton = document.createElement('button')
+  stopButton.textContent = 'Stop Subscribing'
+  stopButton.onclick = () => {
+    remoteVideo.srcObject = null
+    remoteVideo.remove()
+    stopButton.remove()
+    send(new Uint8Array([unsubscribeMessage]))
+  }
+  document.body.appendChild(stopButton)
 
   document.body.appendChild(remoteVideo)
 

@@ -2,7 +2,12 @@ import http from 'http'
 import express from 'express'
 import { Server as WebSocketServer, WebSocket } from 'ws'
 import { print } from 'listening-on'
-import { screenMessage, shareMessage, subscribeMessage } from './message'
+import {
+  screenMessage,
+  shareMessage,
+  subscribeMessage,
+  unsubscribeMessage,
+} from './message'
 
 const app = express()
 
@@ -31,6 +36,9 @@ wss.on('connection', socket => {
         break
       case subscribeMessage:
         subscribers.add(socket)
+        break
+      case unsubscribeMessage:
+        subscribers.delete(socket)
         break
       case screenMessage:
         subscribers.forEach(subscriber => {
