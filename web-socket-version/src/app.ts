@@ -186,6 +186,7 @@ shareButton.onclick = async () => {
       cancelAnimationFrame(timer)
       if (!document.querySelector('.screen-share-container')) {
         send(new Uint8Array([stopSharingMessage]))
+        statusNode.textContent = 'Stopped sharing screen'
       }
     }
     container.appendChild(stopButton)
@@ -264,6 +265,7 @@ subscribeButton.onclick = async () => {
     remoteVideo.remove()
     stopButton.remove()
     send(new Uint8Array([unsubscribeMessage]))
+    statusNode.textContent = 'Stopped subscribing to remote screen'
   }
   document.body.appendChild(stopButton)
 
