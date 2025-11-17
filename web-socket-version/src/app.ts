@@ -1,3 +1,4 @@
+import { createFPSCounter } from './fps'
 import {
   makeScreenMessage,
   parseScreenMessage,
@@ -21,6 +22,10 @@ let wsOrigin = location.origin.replace('http', 'ws')
 let wsUrl = wsOrigin + '/ws'
 let socket = connect()
 
+let senderFPSCounter = createFPSCounter()
+let receiverFPSCounter = createFPSCounter()
+let receiverFPSText: Text | null = null
+
 function connect() {
   let socket = new WebSocket(wsUrl)
   socket.onopen = () => {
@@ -34,6 +39,10 @@ function connect() {
     let message = await blob.bytes()
     switch (message[0]) {
       case screenMessage:
+        if (receiverFPSText) {
+          receiverFPSCounter.tick()
+          receiverFPSText.textContent = receiverFPSCounter.getFPS().toFixed(1)
+        }
         let imageData = parseScreenMessage(message)
         remoteCanvas.width = imageData.width
         remoteCanvas.height = imageData.height
@@ -82,6 +91,14 @@ shareButton.onclick = async () => {
 
     let settings = stream.getVideoTracks()[0].getSettings()
 
+    let senderFPSContainer = document.createElement('div')
+    addText(senderFPSContainer, 'Sender FPS: ')
+    let senderFPSText = addText(
+      senderFPSContainer,
+      senderFPSCounter.getFPS().toFixed(1),
+    )
+    container.appendChild(senderFPSContainer)
+
     let stopButton = document.createElement('button')
     addText(stopButton, 'Stop Sharing Screen (')
     let sizeText = addText(stopButton, `${settings.width}x${settings.height}`)
@@ -127,10 +144,16 @@ shareButton.onclick = async () => {
 
       send(makeScreenMessage(canvas, context, video))
 
+      senderFPSCounter.tick()
+      senderFPSText.textContent = senderFPSCounter.getFPS().toFixed(1)
+
       timer = requestAnimationFrame(shareScreen)
     }
 
     send(new Uint8Array([shareMessage]), 'wait')
+
+    senderFPSCounter.reset()
+    senderFPSText.textContent = '-'
 
     let timer = requestAnimationFrame(shareScreen)
   } catch (error) {
@@ -142,11 +165,19 @@ shareButton.onclick = async () => {
 subscribeButton.onclick = async () => {
   statusNode.textContent = 'Subscribing to remote screen...'
 
+  receiverFPSCounter.reset()
+
+  let receiverFPSContainer = document.createElement('div')
+  addText(receiverFPSContainer, 'Receiver FPS: ')
+  receiverFPSText = addText(receiverFPSContainer, '-')
+  document.body.appendChild(receiverFPSContainer)
+
   let stopButton = document.createElement('button')
   stopButton.textContent = 'Stop Subscribing'
   stopButton.onclick = () => {
     remoteVideo.srcObject = null
     remoteVideo.remove()
+    receiverFPSContainer.remove()
     stopButton.remove()
     send(new Uint8Array([unsubscribeMessage]))
   }
