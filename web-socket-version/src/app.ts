@@ -182,6 +182,11 @@ shareButton.onclick = async () => {
 
     let lastFrameTime = 0
     function shareScreen() {
+      if (socket.bufferedAmount > 0) {
+        requestAnimationFrame(shareScreen)
+        return
+      }
+
       let currentTime = performance.now()
       let timeSinceLastFrame = currentTime - lastFrameTime
       if (timeSinceLastFrame < 1000 / targetFPS) {
