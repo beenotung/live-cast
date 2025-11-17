@@ -151,6 +151,12 @@ shareButton.onclick = async () => {
     )
     container.appendChild(senderFPSContainer)
 
+    let messageSizeContainer = document.createElement('div')
+    addText(messageSizeContainer, 'Message Size: ')
+    let messageSizeText = addText(messageSizeContainer, '-')
+    addText(messageSizeContainer, ' bytes')
+    container.appendChild(messageSizeContainer)
+
     let stopButton = document.createElement('button')
     addText(stopButton, 'Stop Sharing Screen (')
     let sizeText = addText(stopButton, `${settings.width}x${settings.height}`)
@@ -208,7 +214,9 @@ shareButton.onclick = async () => {
         sizeText.textContent = `${settings.width}x${settings.height}`
       }
 
-      send(makeScreenMessage(canvas, context, video))
+      let message = makeScreenMessage(canvas, context, video)
+      send(message)
+      messageSizeText.textContent = message.length.toLocaleString()
 
       senderFPSCounter.tick()
       senderFPSText.textContent = senderFPSCounter.getFPS().toFixed(1)
