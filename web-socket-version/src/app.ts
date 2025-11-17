@@ -220,7 +220,7 @@ shareButton.onclick = async () => {
 
       let currentTime = performance.now()
       let timeSinceLastFrame = currentTime - lastFrameTime
-      if (timeSinceLastFrame < 1000 / targetFPS && limitFPS) {
+      if (timeSinceLastFrame < 1000 / (targetFPS / 0.9) && limitFPS) {
         timer = requestAnimationFrame(shareScreen)
         return
       }
