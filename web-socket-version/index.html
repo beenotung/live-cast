@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Demo</title>
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        margin: 0;
+        background-color: bisque;
+      }
+      #app {
+        display: flex;
+        flex-direction: column;
+        padding: 0.5rem;
+        height: calc(100dvh - 1rem);
+      }
+      h1 {
+        margin: 0;
+      }
+      #status {
+        margin: 0.5rem;
+      }
+      #container {
+        flex-grow: 1;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        background-color: snow;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <h1>Demo</h1>
+      <p id="status">Loading...</p>
+      <div id="container">TODO</div>
+    </div>
+    <script src="dist/bundle.js"></script>
+  </body>
+</html>
