@@ -24,7 +24,7 @@ export async function makeScreenMessage(
   if (!blob) {
     throw new Error('failed to convert canvas to blob')
   }
-  let imageData = await blob.bytes()
+  let imageData = new Uint8Array(await blob.arrayBuffer())
 
   let message = new Uint8Array(3 + imageData.length)
 

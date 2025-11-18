@@ -78,7 +78,7 @@ function connect() {
   }
   socket.onmessage = async event => {
     let blob = event.data as Blob
-    let message = await blob.bytes()
+    let message = new Uint8Array(await blob.arrayBuffer())
     switch (message[0]) {
       case screenMessage:
         if (receiverId) {
