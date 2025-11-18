@@ -42,6 +42,8 @@ let targetFPS = 30
 
 let limitFPS = false
 
+let stopByError = false
+
 function adjustSenderFPS() {
   let fpsList = Object.values(receiverFPSList)
   let medianFPS = median(fpsList)
@@ -77,40 +79,54 @@ function connect() {
     }
   }
   socket.onmessage = async event => {
-    let blob = event.data as Blob
-    let message = new Uint8Array(await blob.arrayBuffer())
-    switch (message[0]) {
-      case screenMessage:
-        if (receiverId) {
-          receiverFPSCounter.tick()
-          let fps = receiverFPSCounter.getFPS()
-          receiverFPSText.textContent = fps.toFixed(1)
-          if (receivedMessage) {
-            send(makeReceivedMessage(receiverId, fps))
+    try {
+      let blob = event.data as Blob
+      let message = new Uint8Array(await blob.bytes())
+      switch (message[0]) {
+        case screenMessage:
+          if (receiverId) {
+            receiverFPSCounter.tick()
+            let fps = receiverFPSCounter.getFPS()
+            receiverFPSText.textContent = fps.toFixed(1)
+            if (receivedMessage) {
+              send(makeReceivedMessage(receiverId, fps))
+            }
           }
-        }
-        let image = await parseScreenMessage(message)
-        remoteCanvas.width = image.width
-        remoteCanvas.height = image.height
-        remoteContext.drawImage(image, 0, 0)
-        break
-      case idMessage:
-        receiverId = parseIdMessage(message)
-        break
-      case receivedMessage:
-        receiverFPSCounter.tick()
-        let { id, fps } = parseReceivedMessage(message)
-        receiverFPSList[id] = fps
-        adjustSenderFPS()
-        break
-      default:
-        console.error('received unknown message:', message)
+          let image = await parseScreenMessage(message)
+          remoteCanvas.width = image.width
+          remoteCanvas.height = image.height
+          remoteContext.drawImage(image, 0, 0)
+          break
+        case idMessage:
+          receiverId = parseIdMessage(message)
+          break
+        case receivedMessage:
+          receiverFPSCounter.tick()
+          let { id, fps } = parseReceivedMessage(message)
+          receiverFPSList[id] = fps
+          adjustSenderFPS()
+          break
+        default:
+          console.error('received unknown message:', message)
+      }
+    } catch (error) {
+      console.error('failed to process message:', error)
+      alert('failed to process message: ' + error)
+      stopByError = true
+      socket.close()
     }
+
   }
   socket.onclose = () => {
     statusNode.textContent = 'Connection lost, reconnecting...'
     let interval = 300 + Math.random() * 800
     setTimeout(reconnect, interval)
+  }
+  socket.onerror = error => {
+    console.error('WebSocket error:', error)
+    alert('WebSocket error: ' + error)
+    socket.close()
+    reconnect()
   }
   return socket
 }
@@ -213,6 +229,9 @@ shareButton.onclick = async () => {
 
     let lastFrameTime = 0
     async function shareScreen() {
+      if (stopByError) {
+        return
+      }
       if (socket.bufferedAmount > 0) {
         timer = requestAnimationFrame(shareScreen)
         return
