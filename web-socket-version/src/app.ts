@@ -115,7 +115,6 @@ function connect() {
       stopByError = true
       socket.close()
     }
-
   }
   socket.onclose = () => {
     statusNode.textContent = 'Connection lost, reconnecting...'
